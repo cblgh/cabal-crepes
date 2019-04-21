@@ -1,0 +1,40 @@
+{
+  "name": "crepes",
+  "version": "1.0.0",
+  "description": "cabal replication diagnostics",
+  "main": "index.js",
+  "bin": {
+    "crepes": "minimal-puppet.js"
+  },
+  "dependencies": {
+    "cabal-core": "^4.0.0",
+    "discovery-swarm": "^5.1.2",
+    "thunky": "^1.0.3"
+  },
+  "devDependencies": {
+    "standard": "^11.0.1"
+  },
+  "scripts": {
+    "test": "standard --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cabal-club/cabal.git"
+  },
+  "keywords": [
+    "decent",
+    "dat",
+    "chat",
+    "cabal",
+    "decentralize",
+    "p2p"
+  ],
+  "authors": [
+    "cblgh"
+  ],
+  "license": "AGPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/cabal-club/cabal/issues"
+  },
+  "homepage": "https://cabal.chat"
+}
