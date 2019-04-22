@@ -4,4 +4,10 @@ var key = process.argv[2] || 'cabal://9c010443f6516ea635aef5ccc2025a3ab67c70a597
 var headless = Headless(key)
 headless.nick('headless')
 headless.post(new Date().toUTCString())
+headless.onPeerConnected((peerId) => {
+  console.log(`${peerId} connected`)
+})
+headless.onPeerDisconnected((peerId) => {
+  console.log(`${peerId} left`)
+})
 headless.connect()

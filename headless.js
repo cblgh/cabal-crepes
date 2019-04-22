@@ -1,6 +1,8 @@
 var Cabal = require('cabal-core')
 var swarm = require('cabal-core/swarm')
 var thunky = require('thunky')
+var events = require('events')
+var inherits = require('inherits')
 var os = require('os')
 var tools = require('./tools')
 
@@ -20,11 +22,15 @@ module.exports = Headless
 function Headless (key, opts) {
   if (!(this instanceof Headless)) return new Headless(key, opts)
   if (!opts) opts = {}
+
   this.key = tools.scrub(key)
   this.db = archivesdir + this.key
   this.cabal = Cabal(this.db, this.key)
   this.instance = thunky((cb) => { this.cabal.db.ready(cb) })
+
+  events.EventEmitter.call(this)
 }
+inherits(Headless, events.EventEmitter)
 
 Headless.prototype.post = function (message, messageType, channel) {
   if (!messageType) { messageType = 'chat/text' }
@@ -61,4 +67,15 @@ Headless.prototype.disconnect = function () {
       this.swarm = null
     }
   })
+}
+
+Headless.prototype.onPeerConnected = function (cb) {
+  this.instance(() => { this.cabal.on('peer-added', cb) })
+}
+
+Headless.prototype.onPeerDisconnected = function (cb) {
+  this.instance(() => { this.cabal.on('peer-dropped', cb) })
+}
+
+Headless.prototype.onMessageReceived = function () {
 }
