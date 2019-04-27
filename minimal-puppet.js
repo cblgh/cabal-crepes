@@ -1,21 +1,44 @@
 var Headless = require('./headless')
+var WebSocket = require("ws")
+
+var addr = ""
 var key = process.argv[2] || 'cabal://9c010443f6516ea635aef5ccc2025a3ab67c70a59791aa10f1e5f1da59f77f4e'
 
-var headless = Headless(key)
-headless.nick('headless')
-headless.post(new Date().toUTCString())
+function Puppet (cabalkey, server) {
+    this.ws = new WebSocket(addr)
+    this.headless = Headless(key)
 
-headless.onPeerConnected((peerId) => {
-  console.log(`${peerId} connected`)
-  console.log('got peers', headless.peers())
-})
+    this.client.onPeerConnected((peerId) => {
+        this.send({ type: "peerConnected", data: peerId})
+      console.log(`${peerId} connected`)
+      console.log('got peers', this.client.peers())
+    })
 
-headless.onPeerDisconnected((peerId) => {
-  console.log(`${peerId} left`)
-})
+    this.client.onPeerDisconnected((peerId) => {
+        this.send({ type: "peerDisconnected", data: peerId})
+      console.log(`${peerId} left`)
+    })
 
-headless.onMessageReceived((data) => {
-  console.log(data)
-})
+    this.client.onMessageReceived((data) => {
+        this.send(ws, { type: "messageReceived", data: peerId})
+      console.log(data)
+    })
+}
 
-headless.connect()
+Puppet.prototype.init = function () {
+    this.client.nick('headless')
+    this.post(new Date().toUTCString())
+    this.client.connect()
+}
+
+Puppet.prototype.send = function (obj) {
+    this.ws.send(JSON.stringify(obj))
+}
+
+Puppet.prototype.post = function (msg) {
+    this.send({ type: "messagePosted", data: msg })
+}
+
+Puppet.prototype.nick = function (nick) {
+    this.client.nick(nick)
+}
