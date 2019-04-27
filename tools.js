@@ -5,3 +5,5 @@ exports.scrub = function (key) {
     .replace('dat://', '')
     .replace(/\//g, '')
 }
+
+exports.noop = function () {}
