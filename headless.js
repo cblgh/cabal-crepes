@@ -24,15 +24,17 @@ function Headless (key, opts) {
   })
 }
 
-Headless.prototype.post = function (message, messageType, channel) {
-  if (!messageType) { messageType = 'chat/text' }
-  if (!channel) { channel = 'default' }
+Headless.prototype.post = function (opts) {
+  if (!opts) return
+  if (typeof opts === 'string') { opts = { message: opts } }
+  if (!opts.messageType) { opts.messageType = 'chat/text' }
+  if (!opts.channel) { opts.channel = 'default' }
   this.instance(() => {
     this.cabal.publish({
-      type: messageType,
+      type: opts.messageType,
       content: {
-        channel: channel,
-        text: message
+        channel: opts.channel,
+        text: opts.message
       }
     })
   })
