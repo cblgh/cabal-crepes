@@ -9,6 +9,8 @@
   "dependencies": {
     "cabal-core": "^4.0.0",
     "discovery-swarm": "^5.1.2",
+    "events": "^3.0.0",
+    "inherits": "^2.0.3",
     "thunky": "^1.0.3"
   },
   "devDependencies": {
