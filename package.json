@@ -10,8 +10,11 @@
     "cabal-core": "^4.0.0",
     "discovery-swarm": "^5.1.2",
     "events": "^3.0.0",
+    "express": "^4.16.4",
     "inherits": "^2.0.3",
-    "thunky": "^1.0.3"
+    "minimist": "^1.2.0",
+    "thunky": "^1.0.3",
+    "ws": "^7.0.0"
   },
   "devDependencies": {
     "standard": "^11.0.1"

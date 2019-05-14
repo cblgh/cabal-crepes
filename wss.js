@@ -8,6 +8,7 @@ function CentralWSS (server) {
     /* TODO when v1 working:
      * add sendJSON to ws.prototype 
      * add join(cabalkey) to puppet
+     * ingest config to generate http & ws routes, generalizing the structure
      * */
 
     this.wsevents = {
@@ -34,7 +35,7 @@ function CentralWSS (server) {
         "messagePosted": (data) => {
             var obj = { puppetid: "", epoch: "", contents: "" , cabal: "", channel: ""}
             this.emit("message-posted", obj)
-        }
+        },
         "nickChanged": (data) => {
             var obj = { puppetid: "", newnick: "" , cabal: "", channel: ""}
             this.emit("message-posted", obj)
@@ -47,21 +48,22 @@ function CentralWSS (server) {
         /* refactor into this.heartMonitor function */
         ws.alive = true
         this.sockets.push(ws)
-        ws.on("pong", () => { ws.isAlive = true })
-        setInterval(() => {
+        ws.on("pong", () => { ws.alive = true })
+        var heartbeat = setInterval(() => {
             this.sockets.forEach((ws) => {
                 if (!ws.alive) {
                     this.sockets.splice(this.sockets.indexOf(ws), 1)
                     ws.terminate()
+                    clearInterval(heartbeat)
                 }
                 ws.alive = false
                 ws.ping(() => {})
             })
-        }, 1000)
+        }, 500)
 
         ws.on("message", (m) => { 
-            m = JSON.parse(m)
             console.log("received message: ", m)
+            m = JSON.parse(m)
             if (m.type in this.wsevents) this.wsevents[m.type](m.data) 
         })
     })
@@ -73,7 +75,8 @@ function CentralWSS (server) {
  *
 */
 
-CentralWSS.prototype.name= function (puppetid, name) {
+CentralWSS.prototype.name = function (puppetid, name) {
+    console.log("wss set puppet name")
     this._send(puppetid, { type: "setNick", data: name})
 }
 
@@ -103,6 +106,8 @@ CentralWSS.prototype.stop = function (puppetid) {
 }
 
 CentralWSS.prototype._send = function (puppetid, obj) {
+    console.log("_senddddddddddddddddD")
+    console.log(this.sockets, this.sockets[puppetid])
     if (!this.sockets[puppetid]) return 
     this.sockets[puppetid].send(JSON.stringify(obj))
 }
