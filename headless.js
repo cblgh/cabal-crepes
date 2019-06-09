@@ -5,6 +5,7 @@ var tools = require('./tools')
 var homedir = os.homedir()
 var rootdir = (homedir + `/.cabal/v${Cabal.databaseVersion}`)
 var archivesdir = `${rootdir}/archives/`
+var ram = require('random-access-memory')
 
 module.exports = Headless
 function Headless (key, opts) {
@@ -13,8 +14,9 @@ function Headless (key, opts) {
 
   this.peerlist = new Set()
   this.key = tools.scrub(key)
-  this.db = archivesdir + this.key
+  this.db = opts.temp ? ram : archivesdir + this.key
   this.cabal = Cabal(this.db, this.key)
+  this.starttime = opts.completeLog ? 0 : Date.now()
   this.instance = thunky((cb) => this.cabal.ready(cb))
   this.instance(() => {
     this.cabal.on('peer-added', (peer) => this._addPeer(peer))
@@ -66,7 +68,7 @@ Headless.prototype._msgRecv = function (data, cb) {
   this.instance(() => {
     this.cabal.getLocalKey((err, local) => {
       if (err) throw err
-      if (data.key === local) return
+      if (data.key === local || parseInt(data.value.timestamp) < this.starttime) return
     cb(data)
     })
   })

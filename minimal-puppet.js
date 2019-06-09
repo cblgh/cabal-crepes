@@ -14,7 +14,7 @@ function Puppet (cabalkey, server, opts) {
     if (!(this instanceof Puppet)) return new Puppet(cabalkey, opts)
     if (!opts) opts = {}
     this.ws = new WebSocket(server)
-    this.headless = Headless(cabalkey)
+    this.headless = Headless(cabalkey, { temp: opts.temp || false })
     this.POST_INTERVAL = 5000 /* ms */
 
     this.wsevents = {
@@ -57,7 +57,6 @@ function Puppet (cabalkey, server, opts) {
         if (data.value && data.value.content && data.value.content.text) {
             contents = data.value.content.text
         }
-      console.log(data)
         this.send({ type: "messageReceived", data: { peerId, contents }})
     })
 }
@@ -72,8 +71,8 @@ Puppet.prototype.send = function (obj) {
 }
 
 Puppet.prototype.post = function (msg) {
-    this.send({ type: "messagePosted", data: msg })
-    this.headless.post({ message: "" + JSON.stringify(msg) })
+    this.send(msg)
+    this.headless.post({ message: msg.data })
 }
 
 Puppet.prototype.nick = function (nick) {
@@ -103,5 +102,5 @@ function startInterval (f, interval) {
     return setInterval(f, interval)
 }
 
-var puppet = new Puppet(key, argv.addr)
+var puppet = new Puppet(key, argv.addr, { temp: argv.temp })
 puppet.init()

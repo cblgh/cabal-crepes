@@ -31,6 +31,11 @@ app.post("/disconnect/:puppet", (req, res) => {
     central.disconnect(req.params.puppet)
 })
 
+app.post("/stat/:puppet", (req, res) => {
+    central.stat(req.params.puppet)
+    res.status(200).send()
+})
+
 app.post("/connect/:puppet", (req, res) => {
     console.log("disconnect puppet", req.params.puppet)
     central.connect(req.params.puppet)

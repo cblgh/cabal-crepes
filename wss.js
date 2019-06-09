@@ -3,6 +3,8 @@ var inherits = require("inherits")
 var events = require("events")
 var db = require("./db")
 
+var NAMES = ["zilch", "ein", "zwei", "drei", "shi", "go", "sex", "siete", "hachi", "neuf", "diez"]
+
 function CentralWSS (server) {
     if (!(this instanceof CentralWSS)) return new CentralWSS(server)
     events.EventEmitter.call(this)
@@ -46,21 +48,26 @@ function CentralWSS (server) {
     this.wss = new WebSocket.Server({ server })
     this.sockets = []
     this.wss.on("connection", (ws) => {
+        console.log("connection")
         /* refactor into this.heartMonitor function */
         ws.alive = true
         this.sockets.push(ws)
+        var puppetid = this.sockets.length - 1
+        this.name(puppetid, NAMES[puppetid])
+        // TODO: fix heartbeat
         ws.on("pong", () => { ws.alive = true })
         var heartbeat = setInterval(() => {
-            this.sockets.forEach((ws) => {
-                if (!ws.alive) {
-                    this.sockets.splice(this.sockets.indexOf(ws), 1)
-                    ws.terminate()
+            this.sockets.forEach((sock) => {
+                if (!sock.alive) {
+                    console.log(this.sockets.indexOf(sock))
+                    // this.sockets.splice(this.sockets.indexOf(sock), 1)
+                    sock.terminate()
                     clearInterval(heartbeat)
                 }
-                ws.alive = false
-                ws.ping(() => {})
+                sock.alive = false
+                sock.ping(() => {})
             })
-        }, 500)
+        }, 1000)
 
         ws.on("message", (m) => { 
             console.log("received message: ", m)
@@ -97,9 +104,16 @@ CentralWSS.prototype.stop = function (puppetid) {
     this._send(puppetid, { type: "stopPosting" })
 }
 
+CentralWSS.prototype.stat = function (puppetid) {
+    console.log(this.sockets.length)
+    if (!this.sockets[puppetid]) {
+        console.log(`${puppetid}: no such puppet`)
+        return
+    } 
+    console.log(`stat puppet#${puppetid}`)
+}
+
 CentralWSS.prototype._send = function (puppetid, obj) {
-    db.write("_senddddddddddddddddD")
-    console.log(this.sockets, this.sockets[puppetid])
     if (!this.sockets[puppetid]) return 
     this.sockets[puppetid].send(JSON.stringify(obj))
 }
