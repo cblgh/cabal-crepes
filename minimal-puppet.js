@@ -17,6 +17,24 @@ function Puppet (cabalkey, server, opts) {
     this.headless = Headless(cabalkey, { temp: opts.temp || false })
     this.POST_INTERVAL = 5000 /* ms */
 
+    /* wss keep-alive junk */
+    // this._heartbeat = () => {
+    //     clearTimeout(this._pingTimeout)
+    //     this._pingTimeout = setTimeout(() => {
+    //         this.ws.terminate()
+    //         console.log("TERMINATED!!!!!!!!!")
+    //         console.log("TERMINATED!!!!!!!!!")
+    //         console.log("TERMINATED!!!!!!!!!")
+    //         console.log("TERMINATED!!!!!!!!!")
+    //     }, 15000)
+    // }
+    //
+    // this.ws.on("open", this._heartbeat)
+    // this.ws.on("ping", this._heartbeat)
+    // this.ws.on("close", () => {
+    //     clearTimeout(this._pingTimeout)
+    // })
+
     this.wsevents = {
         connect: () => {
             this.headless.connect()

@@ -48,7 +48,7 @@ function CentralWSS (server) {
     this.wss = new WebSocket.Server({ server })
     this.sockets = []
     this.wss.on("connection", (ws) => {
-        console.log("connection")
+        console.log("new puppet online")
         /* refactor into this.heartMonitor function */
         ws.alive = true
         this.sockets.push(ws)
@@ -59,15 +59,14 @@ function CentralWSS (server) {
         var heartbeat = setInterval(() => {
             this.sockets.forEach((sock) => {
                 if (!sock.alive) {
-                    console.log(this.sockets.indexOf(sock))
                     // this.sockets.splice(this.sockets.indexOf(sock), 1)
-                    sock.terminate()
-                    clearInterval(heartbeat)
+                    // sock.terminate()
+                    // clearInterval(heartbeat)
                 }
                 sock.alive = false
                 sock.ping(() => {})
             })
-        }, 1000)
+        }, 10000)
 
         ws.on("message", (m) => { 
             console.log("received message: ", m)
@@ -82,7 +81,6 @@ function CentralWSS (server) {
  * post message
  *
 */
-
 CentralWSS.prototype.name = function (puppetid, name) {
     db.write("wss set puppet name")
     this._send(puppetid, { type: "setNick", data: name})
