@@ -8,18 +8,18 @@ if (!argv.addr) {
     process.exit(0)
 }
 
-var key = argv.cabal || 'cabal://9c010443f6516ea635aef5ccc2025a3ab67c70a59791aa10f1e5f1da59f77f4e'
+var key = argv.cabal || 'cabal://0571a52685ead4749bb7c978c1c64767746b04dcddbca3dc53a0bf6b4cb8f398'
 
 function Puppet (cabalkey, server, opts) {
     if (!(this instanceof Puppet)) return new Puppet(cabalkey, opts)
     if (!opts) opts = {}
     this.ws = new WebSocket(server)
     this.headless = Headless(cabalkey)
-    this.POST_INTETRVAL = 5000 /* ms */
+    this.POST_INTERVAL = 5000 /* ms */
 
     this.wsevents = {
         connect: () => {
-            this.headless.connect
+            this.headless.connect()
         },
         disconnect: () => {
             this.headless.disconnect()
@@ -52,8 +52,13 @@ function Puppet (cabalkey, server, opts) {
     })
 
     this.headless.onMessageReceived((data) => {
-        this.send({ type: "messageReceived", data: peerId})
+        var peerId = data.key
+        var contents
+        if (data.value && data.value.content && data.value.content.text) {
+            contents = data.value.content.text
+        }
       console.log(data)
+        this.send({ type: "messageReceived", data: { peerId, contents }})
     })
 }
 
@@ -68,6 +73,7 @@ Puppet.prototype.send = function (obj) {
 
 Puppet.prototype.post = function (msg) {
     this.send({ type: "messagePosted", data: msg })
+    this.headless.post({ message: "" + JSON.stringify(msg) })
 }
 
 Puppet.prototype.nick = function (nick) {
@@ -80,15 +86,21 @@ Puppet.prototype.startPosting = function () {
     if (this.postloop) {
         clearInterval(this.postloop)
     }
-    this.postLoop = startInterval(() => {
+    this.postloop = startInterval(() => {
         this.post({ type: "messagePosted", data: "" + new Date().toUTCString() })
     }, this.POST_INTERVAL)
 }
 
 Puppet.prototype.stopPosting = function () {
+    console.log("stop posting")
     if (this.postloop) {
         clearInterval(this.postloop)
     }
+}
+
+function startInterval (f, interval) {
+    f()
+    return setInterval(f, interval)
 }
 
 var puppet = new Puppet(key, argv.addr)

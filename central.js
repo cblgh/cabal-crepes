@@ -17,11 +17,13 @@ app.get("/", (req, res) => {
 app.post("/start/:puppet", (req, res) => {
     console.log("start puppet", req.params.puppet)
     central.start(req.params.puppet)
+    res.status(200).send()
 })
 
 app.post("/stop/:puppet", (req, res) => {
     console.log("stop puppet", req.params.puppet)
     central.stop(req.params.puppet)
+    res.status(200).send()
 })
 
 app.post("/disconnect/:puppet", (req, res) => {

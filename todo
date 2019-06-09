@@ -1,0 +1,7 @@
+* write events to a simple log.txt
+* write events to a hypercore and create a kappa view
+* write events to a sql database
+* create web interface
+* create dynamic swarm graphics
+* implement allowlist for issuing swarm commands
+* pull commands from cabal via bot

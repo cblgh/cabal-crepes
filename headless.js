@@ -1,9 +1,7 @@
 var Cabal = require('cabal-core')
-var swarm = require('cabal-core/swarm')
 var thunky = require('thunky')
 var os = require('os')
 var tools = require('./tools')
-
 var homedir = os.homedir()
 var rootdir = (homedir + `/.cabal/v${Cabal.databaseVersion}`)
 var archivesdir = `${rootdir}/archives/`
@@ -17,7 +15,7 @@ function Headless (key, opts) {
   this.key = tools.scrub(key)
   this.db = archivesdir + this.key
   this.cabal = Cabal(this.db, this.key)
-  this.instance = thunky((cb) => this.cabal.db.ready(cb))
+  this.instance = thunky((cb) => this.cabal.ready(cb))
   this.instance(() => {
     this.cabal.on('peer-added', (peer) => this._addPeer(peer))
     this.cabal.on('peer-removed', (peer) => this._removePeer(peer))
@@ -64,6 +62,16 @@ Headless.prototype._removePeer = function (peer, cb) {
   })
 }
 
+Headless.prototype._msgRecv = function (data, cb) {
+  this.instance(() => {
+    this.cabal.getLocalKey((err, local) => {
+      if (err) throw err
+      if (data.key === local) return
+    cb(data)
+    })
+  })
+}
+
 Headless.prototype.nick = function (nick) {
   this.instance(() => this.cabal.publishNick(nick))
 }
@@ -71,7 +79,7 @@ Headless.prototype.nick = function (nick) {
 // join swarm
 Headless.prototype.connect = function () {
   this.instance(() => {
-    if (!this.swarm) { this.swarm = swarm(this.cabal) }
+    if (!this.swarm) { this.swarm = this.cabal.swarm() }
   })
 }
 
@@ -98,7 +106,9 @@ Headless.prototype.onPeerDisconnected = function (cb) {
 }
 
 Headless.prototype.onMessageReceived = function (cb) {
-  this.instance(() => this.cabal.messages.events.on('message', cb))
+  this.instance(() => {
+      this.cabal.messages.events.on('message', (data) => { this._msgRecv(data, cb) })
+  })
 }
 
 Headless.prototype.peers = function () {

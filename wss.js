@@ -1,6 +1,7 @@
 var WebSocket = require("ws")
 var inherits = require("inherits")
 var events = require("events")
+var db = require("./db")
 
 function CentralWSS (server) {
     if (!(this instanceof CentralWSS)) return new CentralWSS(server)
@@ -76,7 +77,7 @@ function CentralWSS (server) {
 */
 
 CentralWSS.prototype.name = function (puppetid, name) {
-    console.log("wss set puppet name")
+    db.write("wss set puppet name")
     this._send(puppetid, { type: "setNick", data: name})
 }
 
@@ -84,17 +85,8 @@ CentralWSS.prototype.connect = function (puppetid) {
     this._send(puppetid, { type: "connect" })
 }
 
-CentralWSS.prototype.connectAll = function () {
-}
-
 CentralWSS.prototype.disconnect = function (puppetid) {
     this._send(puppetid, { type: "disconnect" })
-}
-
-CentralWSS.prototype.disconnectAll = function () {
-}
-
-CentralWSS.prototype.shutdownAll = function () {
 }
 
 CentralWSS.prototype.start = function (puppetid) {
@@ -106,11 +98,21 @@ CentralWSS.prototype.stop = function (puppetid) {
 }
 
 CentralWSS.prototype._send = function (puppetid, obj) {
-    console.log("_senddddddddddddddddD")
+    db.write("_senddddddddddddddddD")
     console.log(this.sockets, this.sockets[puppetid])
     if (!this.sockets[puppetid]) return 
     this.sockets[puppetid].send(JSON.stringify(obj))
 }
+
+CentralWSS.prototype.connectAll = function () {
+}
+
+CentralWSS.prototype.disconnectAll = function () {
+}
+
+CentralWSS.prototype.shutdownAll = function () {
+}
+
 
 inherits(CentralWSS, events.EventEmitter)
 
