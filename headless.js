@@ -81,7 +81,12 @@ Headless.prototype.nick = function (nick) {
 // join swarm
 Headless.prototype.connect = function () {
   this.instance(() => {
-    if (!this.swarm) { this.swarm = this.cabal.swarm() }
+    if (!this.swarm) { 
+        this.cabal.swarm((err, swarm) => { 
+            if (err) throw err
+            this.swarm = swarm 
+        }) 
+    }
   })
 }
 
@@ -89,7 +94,7 @@ Headless.prototype.connect = function () {
 Headless.prototype.disconnect = function () {
   this.instance(() => {
     if (this.swarm) {
-      this.swarm.leave()
+      this.swarm.close()
       this.swarm = null
     }
   })
@@ -111,6 +116,15 @@ Headless.prototype.onMessageReceived = function (cb) {
   this.instance(() => {
       this.cabal.messages.events.on('message', (data) => { this._msgRecv(data, cb) })
   })
+}
+
+Headless.prototype.id = function (cb) {
+    this.instance(() => {
+        this.cabal.getLocalKey((err, key) => {
+            if (err) throw err
+            cb(key)
+        })
+    })
 }
 
 Headless.prototype.peers = function () {

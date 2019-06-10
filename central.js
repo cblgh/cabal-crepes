@@ -26,19 +26,21 @@ app.post("/stop/:puppet", (req, res) => {
     res.status(200).send()
 })
 
+app.post("/stat/:puppet", (req, res) => {
+    central.stat(req.params.puppet)
+    res.status(200).send()
+})
+
 app.post("/disconnect/:puppet", (req, res) => {
     console.log("disconnect puppet", req.params.puppet)
     central.disconnect(req.params.puppet)
-})
-
-app.post("/stat/:puppet", (req, res) => {
-    central.stat(req.params.puppet)
     res.status(200).send()
 })
 
 app.post("/connect/:puppet", (req, res) => {
     console.log("disconnect puppet", req.params.puppet)
     central.connect(req.params.puppet)
+    res.status(200).send()
 })
 
 app.post("/name/:puppet/:name", (req, res) => {

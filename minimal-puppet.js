@@ -1,4 +1,5 @@
 var Headless = require('./headless')
+var thunky = require("thunky")
 var WebSocket = require("ws")
 var minimist = require("minimist")
 var argv = minimist(process.argv.slice(2))
@@ -16,6 +17,9 @@ function Puppet (cabalkey, server, opts) {
     this.ws = new WebSocket(server)
     this.headless = Headless(cabalkey, { temp: opts.temp || false })
     this.POST_INTERVAL = 5000 /* ms */
+    this.localKey = thunky((cb) => {
+        this.headless.id(cb)
+    })
 
     /* wss keep-alive junk */
     // this._heartbeat = () => {
@@ -37,9 +41,11 @@ function Puppet (cabalkey, server, opts) {
 
     this.wsevents = {
         connect: () => {
+            console.log("connect to swarm")
             this.headless.connect()
         },
         disconnect: () => {
+            console.log("disconnect from swarm")
             this.headless.disconnect()
         },
         startPosting: () => {
@@ -85,7 +91,10 @@ Puppet.prototype.init = function () {
 }
 
 Puppet.prototype.send = function (obj) {
-    this.ws.send(JSON.stringify(obj))
+    this.localKey((key) => {
+        obj["peerid"] = key
+        this.ws.send(JSON.stringify(obj))
+    })
 }
 
 Puppet.prototype.post = function (msg) {
