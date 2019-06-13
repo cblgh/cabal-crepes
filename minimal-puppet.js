@@ -14,13 +14,14 @@ var key = argv.cabal || 'cabal://0571a52685ead4749bb7c978c1c64767746b04dcddbca3d
 function Puppet (cabalkey, server, opts) {
     if (!(this instanceof Puppet)) return new Puppet(cabalkey, opts)
     if (!opts) opts = {}
-    this.cabalkey = cabalkey
+    this.cabalkey = cabalkey.replace("cabal://", "").replace("cbl://", "")
     this.ws = new WebSocket(server)
     this.headless = Headless(cabalkey, { temp: opts.temp || false })
     this.POST_INTERVAL = 5000 /* ms */
     this.localKey = thunky((cb) => {
         this.headless.id(cb)
     })
+    this.register()
 
     /* wss keep-alive junk */
     // this._heartbeat = () => {
@@ -124,6 +125,10 @@ Puppet.prototype.stopPosting = function () {
     if (this.postloop) {
         clearInterval(this.postloop)
     }
+}
+
+Puppet.prototype.register = function () {
+    this.send({ type: "register" })
 }
 
 function startInterval (f, interval) {
