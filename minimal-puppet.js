@@ -14,6 +14,7 @@ var key = argv.cabal || 'cabal://0571a52685ead4749bb7c978c1c64767746b04dcddbca3d
 function Puppet (cabalkey, server, opts) {
     if (!(this instanceof Puppet)) return new Puppet(cabalkey, opts)
     if (!opts) opts = {}
+    this.cabalkey = cabalkey
     this.ws = new WebSocket(server)
     this.headless = Headless(cabalkey, { temp: opts.temp || false })
     this.POST_INTERVAL = 5000 /* ms */
@@ -93,6 +94,7 @@ Puppet.prototype.init = function () {
 Puppet.prototype.send = function (obj) {
     this.localKey((key) => {
         obj["peerid"] = key
+        obj["cabal"] = this.cabalkey
         this.ws.send(JSON.stringify(obj))
     })
 }

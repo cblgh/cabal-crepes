@@ -16,23 +16,18 @@ function CentralWSS (server) {
 
     this.wsevents = {
         "register": (data) => {
-            var obj = { puppetid: "", cabal: "" }
             this.emit("puppet-registered", data)
         },
         "deregister": (data) => {
-            var obj = { puppetid: "", cabal: "" }
             this.emit("puppet-deregistered", data)
         },
         "peerConnected": (data) => {
-            var obj = { puppetid: "", peer: "", cabal: "" }
-            this.emit("peer-connected", obj)
+            this.emit("peer-connected", data)
         },
         "peerDisconnected": (data) => {
-            var obj = { puppetid: "", peer: "", cabal: "" }
-            this.emit("peer-disconnected", obj)
+            this.emit("peer-disconnected", data)
         },
         "messageReceived": (data) => {
-            var obj = { puppetid: "", epoch: "", contents: "" , cabal: "", channel: ""}
             this.emit("message-received", obj)
         },
         "messagePosted": (data) => {
