@@ -1,7 +1,6 @@
 var WebSocket = require("ws")
 var inherits = require("inherits")
 var events = require("events")
-var db = require("./db")
 
 var NAMES = ["zilch", "ein", "zwei", "drei", "shi", "go", "sex", "siete", "hachi", "neuf", "diez"]
 
@@ -16,27 +15,25 @@ function CentralWSS (server) {
 
     this.wsevents = {
         "register": (data) => {
-            this.emit("puppet-registered", data)
+            this.emit("register", data)
         },
         "deregister": (data) => {
-            this.emit("puppet-deregistered", data)
+            this.emit("deregister", data)
         },
         "peerConnected": (data) => {
-            this.emit("peer-connected", data)
+            this.emit("peerConnected", data)
         },
         "peerDisconnected": (data) => {
-            this.emit("peer-disconnected", data)
+            this.emit("peerDisconnected", data)
         },
         "messageReceived": (data) => {
-            this.emit("message-received", obj)
+            this.emit("messageReceived", data)
         },
         "messagePosted": (data) => {
-            var obj = { puppetid: "", epoch: "", contents: "" , cabal: "", channel: ""}
-            this.emit("message-posted", obj)
+            this.emit("messagePosted", data)
         },
         "nickChanged": (data) => {
-            var obj = { puppetid: "", newnick: "" , cabal: "", channel: ""}
-            this.emit("message-posted", obj)
+            this.emit("nickChanged", data)
         }
     }
 
@@ -64,9 +61,10 @@ function CentralWSS (server) {
         }, 10000)
 
         ws.on("message", (m) => { 
-            console.log("received message: ", m)
+            // console.log("received message: ", m)
             m = JSON.parse(m)
-            if (m.type in this.wsevents) this.wsevents[m.type](m.data) 
+            m["time"] = Date.now()
+            if (m.type in this.wsevents) this.wsevents[m.type](m) 
         })
     })
 }
@@ -77,7 +75,6 @@ function CentralWSS (server) {
  *
 */
 CentralWSS.prototype.name = function (puppetid, name) {
-    db.write("wss set puppet name")
     this._send(puppetid, { type: "setNick", data: name})
 }
 

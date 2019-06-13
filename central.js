@@ -10,6 +10,9 @@ var server = app.listen(port, () => {
 
 var central = new CentralWSS(server)
 
+
+Object.keys(central.wsevents).forEach((type) => central.on(type, db.write))
+
 app.get("/", (req, res) => {
     res.send("you've reached central central, over.")
 })
