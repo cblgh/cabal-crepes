@@ -1,6 +1,6 @@
 * fix heartbeat (clients that are still connected don't answer to ping or sth)
 * write events to a simple log.txt
-* write events to a hypercore and create a kappa view
+* write events to a hypercore and create a kappa view for current state of puppets (for use in web interface)
 * write events to a sql database
 * create web interface
 * create dynamic swarm graphics
