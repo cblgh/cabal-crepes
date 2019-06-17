@@ -7,3 +7,4 @@
 * implement allowlist for issuing swarm commands
 * pull commands from cabal via bot
 * issue warning when a threshold of messages have been posted over wss, but not received by anyone
+* ? create a new cabal via puppet 
