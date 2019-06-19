@@ -1,4 +1,5 @@
 var fs = require("fs")
+var rotate = require("log-rotate")
 
 function Logger(opts) {
     if (!(this instanceof Logger)) return new Logger(opts)
@@ -6,6 +7,15 @@ function Logger(opts) {
     this.method = opts.method || "stdout"
     this.style = opts.style || "human"
     this.file = "log.txt"
+    // create a new log file for each session and rotate usage of them
+    if (this.method === "file") {
+        rotate(this.file, {count: 4}, function (err) {
+            if (err) {
+                console.error(err)
+                throw err
+            }
+        })
+    }
 }
 
 Logger.prototype.log = function (data) {
@@ -25,10 +35,13 @@ Logger.prototype.print = function (data) {
 }
 
 Logger.prototype.save = function (data) {
-    fs.writeFile(this.file, this.format(data)+"\n", (err) => { if (err) throw err })
+    if (!this.ws) {
+        this.ws = fs.createWriteStream(this.file, { flags: "a" })
+    }
+    this.ws.write(this.format(data)+"\n", (err) => { if (err) throw err })
 }
 
-Logger.prototype.format(d) {
+Logger.prototype.format = function(d) {
     // TODO future style of stringified json objects for structured logging
     switch (this.style) {
         case "json":

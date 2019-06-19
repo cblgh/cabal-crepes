@@ -1,6 +1,6 @@
 var express = require("express")
 var CentralWSS = require("./wss")
-var db = require("./db")
+var Logger = require("./db")
 var app = express()
 var port = 8899
 
@@ -9,9 +9,12 @@ var server = app.listen(port, () => {
 })
 
 var central = new CentralWSS(server)
+var db = new Logger({ method: "file" })
 
 
-Object.keys(central.wsevents).forEach((type) => central.on(type, db.write))
+Object.keys(central.wsevents).forEach((type) => central.on(type, function (evt) {
+    db.log(evt)
+}))
 
 app.get("/", (req, res) => {
     res.send("you've reached central central, over.")
