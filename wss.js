@@ -76,31 +76,31 @@ function CentralWSS (server) {
 */
 CentralWSS.prototype.name = function (puppetid, name) {
     this._send(puppetid, { type: "setNick", data: name})
+    return this._log(`set name to ${name} for `, puppetid)
 }
 
 CentralWSS.prototype.connect = function (puppetid) {
     this._send(puppetid, { type: "connect" })
+    return this._log("connect", puppetid)
 }
 
 CentralWSS.prototype.disconnect = function (puppetid) {
     this._send(puppetid, { type: "disconnect" })
+    return this._log("disconnect", puppetid)
 }
 
 CentralWSS.prototype.start = function (puppetid) {
     this._send(puppetid, { type: "startPosting" })
+    return this._log("start posting", puppetid)
 }
 
 CentralWSS.prototype.stop = function (puppetid) {
     this._send(puppetid, { type: "stopPosting" })
+    return this._log("stop posting", puppetid)
 }
 
 CentralWSS.prototype.stat = function (puppetid) {
-    console.log(this.sockets.length)
-    if (!this.sockets[puppetid]) {
-        console.log(`${puppetid}: no such puppet`)
-        return
-    } 
-    console.log(`stat puppet#${puppetid}`)
+    return this._log("stat", puppetid)
 }
 
 CentralWSS.prototype._send = function (puppetid, obj) {
@@ -115,6 +115,15 @@ CentralWSS.prototype.disconnectAll = function () {
 }
 
 CentralWSS.prototype.shutdownAll = function () {
+}
+
+CentralWSS.prototype._log = function (command, puppetid) {
+    if (!this.sockets[puppetid]) {
+        msg = `${puppetid}: no such puppet`
+    }  else { 
+        msg = `${command} puppet#${puppetid}`
+    }
+    return msg
 }
 
 
