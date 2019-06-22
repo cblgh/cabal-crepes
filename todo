@@ -3,6 +3,9 @@
 * write events to a sql database
 * create web interface
 * create dynamic swarm graphics
-* implement allowlist for issuing swarm commands
-* pull commands from cabal via bot
-* issue warning when a threshold of messages have been posted over wss, but not received by anyone
+
+making crepes easily depoyable
+* puppets read addr, cabal from newline delineated file
+* create npm module cabal-crepes-default which contains default settings
+* puppets retry connection to wss server when connection is lost 
+  (e.g wss restarted)
