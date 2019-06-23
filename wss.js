@@ -22,7 +22,10 @@ function CentralWSS (server) {
             if (data.role === "consumer") this.consumers.push(sock)
             if (data.role === "puppet") {
                 this.puppets.push(sock)
+                var puppetid = this.puppets.length - 1
+                this.name(puppetid, NAMES[puppetid])
                 this.emit("register", data)
+                console.log("new puppet online")
             }
         },
         "deregister": (data) => {
@@ -48,12 +51,10 @@ function CentralWSS (server) {
     this.wss = new WebSocket.Server({ server })
     this.sockets = []
     this.wss.on("connection", (ws) => {
-        console.log("new puppet online")
+        console.log("incoming connection")
         /* refactor into this.heartMonitor function */
         ws.alive = true
         this.sockets.push(ws)
-        var puppetid = this.sockets.length - 1
-        this.name(puppetid, NAMES[puppetid])
         // TODO: fix heartbeat
         ws.on("pong", () => { ws.alive = true })
         var heartbeat = setInterval(() => {
@@ -114,8 +115,8 @@ CentralWSS.prototype.stat = function (puppetid) {
 }
 
 CentralWSS.prototype._send = function (puppetid, obj) {
-    if (!this.sockets[puppetid]) return 
-    this.sockets[puppetid].send(JSON.stringify(obj))
+    if (!this.puppets[puppetid]) return 
+    this.puppets[puppetid].send(JSON.stringify(obj))
 }
 
 CentralWSS.prototype.connectAll = function () {
@@ -128,7 +129,7 @@ CentralWSS.prototype.shutdownAll = function () {
 }
 
 CentralWSS.prototype._log = function (command, puppetid) {
-    if (!this.sockets[puppetid]) {
+    if (!this.puppets[puppetid]) {
         msg = `${puppetid}: no such puppet`
     }  else { 
         msg = `${command} puppet#${puppetid}`
