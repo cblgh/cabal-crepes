@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "cabal-core": "^5.1.2",
+    "cabal-headless": "^1.0.2",
     "discovery-swarm": "^5.1.2",
     "events": "^3.0.0",
     "express": "^4.16.4",
