@@ -14,6 +14,21 @@ function load () {
         POST({ url: `name/${puppetid}/${newName}`, cb: log})
     }
     createButton("name", rename)
+    engageWebsockets()
+}
+
+function engageWebsockets () {
+    var socket = new WebSocket(window.location.toString().replace(/https?:\/\//, "ws://"))
+    socket.addEventListener("open", function() {
+        console.log("server started")
+        socket.send(JSON.stringify({ type: "register", role: "consumer" }))
+    })
+
+    socket.addEventListener("message", function (evt) {
+        console.log(evt)
+        console.log(evt.data)
+        log(evt.data)
+    })
 }
 
 function instantiate (cmd) {
@@ -46,15 +61,17 @@ function POST (opts) {
     fetch(window.location + opts.url, fetchOptions)
         .then(res => res.json()).then(opts.cb)
         .catch((err) => {
-            log({ msg: `Error: ${opts.url} doesn't return json`})
+            console.error(err)
+            log(`Error: ${opts.url} doesn't return json`)
         })
 }
 
 function log (msg) {
+    if (typeof msg === 'object') { msg = msg.msg } // unpack
     var term = document.getElementById("terminal")
     var time = new Date().toISOString().split("T")[1].split(".")[0]
     var entry = el("div")
-    entry.innerHTML = `[${time}] ${msg.msg}`
+    entry.innerHTML = `[${time}] ${msg}`
     term.append(entry)
 }
 

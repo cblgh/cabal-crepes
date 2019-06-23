@@ -12,10 +12,18 @@ function CentralWSS (server) {
      * add join(cabalkey) to puppet
      * ingest config to generate http & ws routes, generalizing the structure
      * */
+    
+    this.puppets = []
+    this.consumers = []
 
     this.wsevents = {
-        "register": (data) => {
-            this.emit("register", data)
+        "register": (data, sock) => {
+            sock.role = data.role
+            if (data.role === "consumer") this.consumers.push(sock)
+            if (data.role === "puppet") {
+                this.puppets.push(sock)
+                this.emit("register", data)
+            }
         },
         "deregister": (data) => {
             this.emit("deregister", data)
@@ -61,10 +69,12 @@ function CentralWSS (server) {
         }, 10000)
 
         ws.on("message", (m) => { 
-            // console.log("received message: ", m)
+            // forward to consumers
+            this.consumers.forEach((c) => c.send(m))
+            // parse
             m = JSON.parse(m)
             m["time"] = Date.now()
-            if (m.type in this.wsevents) this.wsevents[m.type](m) 
+            if (m.type in this.wsevents) this.wsevents[m.type](m, ws) 
         })
     })
 }

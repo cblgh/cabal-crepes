@@ -3,13 +3,18 @@ var thunky = require("thunky")
 var WebSocket = require("ws")
 var minimist = require("minimist")
 var argv = minimist(process.argv.slice(2))
+var fs = require("fs")
+var configPath = argv.conf || "crepes.conf" 
 
-if (!argv.addr) {
-    console.error("ya gotta gimme a ws server with --addr <srv>")
-    process.exit(0)
+var conf = ["", ""]
+try {
+    conf = fs.readFileSync(configPath).toString().split("\n").filter((l) => l.length > 0)
+} catch (err) {
+    if (!argv.addr) die("Running without crepes.conf: no --addr arg found, terminating")
+    if (!argv.cabal) die("Running without crepes.conf: no --cabal arg found, terminating")
 }
-
-var key = argv.cabal || 'cabal://0571a52685ead4749bb7c978c1c64767746b04dcddbca3dc53a0bf6b4cb8f398'
+var key = argv.cabal || conf[0]
+var addr = argv.addr || conf[1]
 
 function Puppet (cabalkey, server, opts) {
     if (!(this instanceof Puppet)) return new Puppet(cabalkey, opts)
@@ -128,7 +133,7 @@ Puppet.prototype.stopPosting = function () {
 }
 
 Puppet.prototype.register = function () {
-    this.send({ type: "register" })
+    this.send({ type: "register", role: "puppet"})
 }
 
 function startInterval (f, interval) {
@@ -136,5 +141,10 @@ function startInterval (f, interval) {
     return setInterval(f, interval)
 }
 
-var puppet = new Puppet(key, argv.addr, { temp: argv.temp })
+function die (msg) {
+    console.error(msg)
+    process.exit(1)
+}
+
+var puppet = new Puppet(key, addr, { temp: argv.temp })
 puppet.init()
