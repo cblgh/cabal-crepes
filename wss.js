@@ -50,24 +50,31 @@ function CentralWSS (server) {
 
     this.wss = new WebSocket.Server({ server })
     this.sockets = []
+    var heartbeat = setInterval(() => {
+        this.sockets.forEach((sock) => {
+            if (!sock.alive) {
+                console.log("sock died")
+                if (sock.role === "puppet") { this.puppets.splice(this.puppets.indexOf(sock), 1) }
+                if (sock.role === "consumer") { this.consumers.splice(this.consumers.indexOf(sock), 1) }
+                this.sockets.splice(this.sockets.indexOf(sock), 1)
+                sock.terminate()
+            }
+            sock.alive = false
+            sock.ping(() => {})
+        })
+    }, 5000)
+
+    this.wss.on("listening", () => {
+        console.log("wss started")
+    })
+
     this.wss.on("connection", (ws) => {
         console.log("incoming connection")
         /* refactor into this.heartMonitor function */
         ws.alive = true
         this.sockets.push(ws)
-        // TODO: fix heartbeat
         ws.on("pong", () => { ws.alive = true })
-        var heartbeat = setInterval(() => {
-            this.sockets.forEach((sock) => {
-                if (!sock.alive) {
-                    // this.sockets.splice(this.sockets.indexOf(sock), 1)
-                    // sock.terminate()
-                    // clearInterval(heartbeat)
-                }
-                sock.alive = false
-                sock.ping(() => {})
-            })
-        }, 10000)
+        ws.ping(() => {})
 
         ws.on("message", (m) => { 
             // forward to consumers

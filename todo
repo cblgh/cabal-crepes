@@ -1,11 +1,9 @@
-* fix heartbeat (clients that are still connected don't answer to ping or sth)
 * write events to a hypercore and create a kappa view for current state of puppets (for use in web interface)
 * write events to a sql database
-* create web interface
 * create dynamic swarm graphics
 
 making crepes easily depoyable
-* puppets read addr, cabal from newline delineated file
 * create npm module cabal-crepes-default which contains default settings
+* puppets try to establish connection even if wss hasn't started yet
 * puppets retry connection to wss server when connection is lost 
   (e.g wss restarted)

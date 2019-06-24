@@ -26,7 +26,6 @@ function Puppet (cabalkey, server, opts) {
     this.localKey = thunky((cb) => {
         this.headless.id(cb)
     })
-    this.register()
 
     /* wss keep-alive junk */
     // this._heartbeat = () => {
@@ -39,12 +38,30 @@ function Puppet (cabalkey, server, opts) {
     //         console.log("TERMINATED!!!!!!!!!")
     //     }, 15000)
     // }
-    //
     // this.ws.on("open", this._heartbeat)
-    // this.ws.on("ping", this._heartbeat)
+    // 
     // this.ws.on("close", () => {
     //     clearTimeout(this._pingTimeout)
     // })
+
+    function date () {
+        return new Date().toISOString().split("T")[1].split(".")[0]
+    }
+
+    this.ws.on("ping", () => {
+        this.ws.ping(() => {})
+        console.log(date(), "ping")
+    })
+
+    this.ws.on("pong", function () {
+        console.log(date(), "pong")
+    })
+
+    this.ws.on("open", () => {
+        console.log("open")
+        this.register()
+        this.ws.ping(() => {})
+    })
 
     this.wsevents = {
         connect: () => {
