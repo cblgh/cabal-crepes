@@ -27,49 +27,28 @@ function Puppet (cabalkey, server, opts) {
         this.headless.id(cb)
     })
 
-    /* wss keep-alive junk */
-    // this._heartbeat = () => {
-    //     clearTimeout(this._pingTimeout)
-    //     this._pingTimeout = setTimeout(() => {
-    //         this.ws.terminate()
-    //         console.log("TERMINATED!!!!!!!!!")
-    //         console.log("TERMINATED!!!!!!!!!")
-    //         console.log("TERMINATED!!!!!!!!!")
-    //         console.log("TERMINATED!!!!!!!!!")
-    //     }, 15000)
-    // }
-    // this.ws.on("open", this._heartbeat)
-    // 
-    // this.ws.on("close", () => {
-    //     clearTimeout(this._pingTimeout)
-    // })
-
-    function date () {
-        return new Date().toISOString().split("T")[1].split(".")[0]
-    }
-
     this.ws.on("ping", () => {
         this.ws.ping(() => {})
-        console.log(date(), "ping")
+        log("ping")
     })
 
     this.ws.on("pong", function () {
-        console.log(date(), "pong")
+        log("pong")
     })
 
     this.ws.on("open", () => {
-        console.log("open")
+        log("open")
         this.register()
         this.ws.ping(() => {})
     })
 
     this.wsevents = {
         connect: () => {
-            console.log("connect to swarm")
+            log("connect to swarm")
             this.headless.connect()
         },
         disconnect: () => {
-            console.log("disconnect from swarm")
+            log("disconnect from swarm")
             this.headless.disconnect()
         },
         startPosting: () => {
@@ -90,13 +69,13 @@ function Puppet (cabalkey, server, opts) {
 
     this.headless.onPeerConnected((peerId) => {
         this.send({ type: "peerConnected", data: peerId})
-        console.log(`${peerId} connected`)
-        console.log('got peers', this.headless.peers())
+        log(`${peerId} connected`)
+        log(`${this.headless.peers().length()} peers connected`)
     })
 
     this.headless.onPeerDisconnected((peerId) => {
         this.send({ type: "peerDisconnected", data: peerId})
-      console.log(`${peerId} left`)
+        log(`${peerId} left`)
     })
 
     this.headless.onMessageReceived((data) => {
@@ -128,7 +107,7 @@ Puppet.prototype.post = function (msg) {
 }
 
 Puppet.prototype.nick = function (nick) {
-    console.log("change nick :))")
+    log("change nick")
     this.headless.nick(nick)
     this.send({ type: "nickChanged", data: nick })
 }
@@ -143,7 +122,7 @@ Puppet.prototype.startPosting = function () {
 }
 
 Puppet.prototype.stopPosting = function () {
-    console.log("stop posting")
+    log("stop posting")
     if (this.postloop) {
         clearInterval(this.postloop)
     }
@@ -161,6 +140,11 @@ function startInterval (f, interval) {
 function die (msg) {
     console.error(msg)
     process.exit(1)
+}
+
+function log (msg) {
+    var time = new Date().toISOString().split("T")[1].split(".")[0]
+    process.stdout.write(`[${time}] ${msg}\n`)
 }
 
 var puppet = new Puppet(key, addr, { temp: argv.temp })
