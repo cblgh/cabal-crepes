@@ -5,41 +5,27 @@ var minimist = require("minimist")
 var argv = minimist(process.argv.slice(2))
 var fs = require("fs")
 var configPath = argv.conf || "crepes.conf" 
-
 var conf = ["", ""]
+
 try {
     conf = fs.readFileSync(configPath).toString().split("\n").filter((l) => l.length > 0)
 } catch (err) {
     if (!argv.addr) die("Running without crepes.conf: no --addr arg found, terminating")
     if (!argv.cabal) die("Running without crepes.conf: no --cabal arg found, terminating")
 }
+
 var key = argv.cabal || conf[0]
 var addr = argv.addr || conf[1]
 
 function Puppet (cabalkey, server, opts) {
     if (!(this instanceof Puppet)) return new Puppet(cabalkey, opts)
     if (!opts) opts = {}
+    this.server = server
     this.cabalkey = cabalkey.replace("cabal://", "").replace("cbl://", "")
-    this.ws = new WebSocket(server)
     this.headless = Headless(cabalkey, { temp: opts.temp || false })
     this.POST_INTERVAL = 5000 /* ms */
     this.localKey = thunky((cb) => {
         this.headless.id(cb)
-    })
-
-    this.ws.on("ping", () => {
-        this.ws.ping(() => {})
-        log("ping")
-    })
-
-    this.ws.on("pong", function () {
-        log("pong")
-    })
-
-    this.ws.on("open", () => {
-        log("open")
-        this.register()
-        this.ws.ping(() => {})
     })
 
     this.wsevents = {
@@ -62,11 +48,6 @@ function Puppet (cabalkey, server, opts) {
         }
     }
 
-    this.ws.on("message", (m) => {
-        m = JSON.parse(m)
-        if (m.type in this.wsevents) this.wsevents[m.type](m.data)
-    })
-
     this.headless.onPeerConnected((peerId) => {
         this.send({ type: "peerConnected", data: peerId})
         log(`${peerId} connected`)
@@ -88,9 +69,44 @@ function Puppet (cabalkey, server, opts) {
     })
 }
 
-Puppet.prototype.init = function () {
-    this.headless.nick('headless')
-    this.headless.connect()
+Puppet.prototype.setupWebsocket = function (cb) {
+    if (!cb) cb = function () {}
+    this.ws = new WebSocket(this.server)
+
+    this.ws.on("error", function (e) {
+        cb(e)
+    })
+
+    this.ws.on("open", () => {
+        log("open")
+        this.ws.ping(() => {})
+        cb(null)
+    })
+
+    this.ws.on("ping", () => {
+        this.ws.ping(() => {})
+        log("ping")
+    })
+
+    this.ws.on("pong", function () {
+        log("pong")
+    })
+
+    this.ws.on("message", (m) => {
+        m = JSON.parse(m)
+        if (m.type in this.wsevents) this.wsevents[m.type](m.data)
+    })
+}
+
+
+Puppet.prototype.init = function (cb) {
+    this.setupWebsocket((err) => {
+        if (err) { return cb(err) } 
+        this.register()
+        this.headless.nick('headless')
+        this.headless.connect()
+        cb(null)
+    })
 }
 
 Puppet.prototype.send = function (obj) {
@@ -147,5 +163,16 @@ function log (msg) {
     process.stdout.write(`[${time}] ${msg}\n`)
 }
 
-var puppet = new Puppet(key, addr, { temp: argv.temp })
-puppet.init()
+function setup () {
+    var retryTime = argv.retry || 10000
+    var puppet = new Puppet(key, addr, { temp: argv.temp })
+    puppet.init((err) => {
+        if (err) {
+            log(`couldn't connect to ${addr}`)
+            log(`retrying in ${retryTime/1000}s`)
+            setTimeout(setup, retryTime)
+        }
+    })
+}
+
+setup()
