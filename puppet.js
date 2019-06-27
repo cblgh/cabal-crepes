@@ -24,6 +24,7 @@ function Puppet (cabalkey, server, opts) {
     this.cabalkey = cabalkey.replace("cabal://", "").replace("cbl://", "")
     this.headless = Headless(cabalkey, { temp: opts.temp || false })
     this.POST_INTERVAL = 5000 /* ms */
+    this.SERVER_TIMEOUT = 8000 /* ms */ 
     this.localKey = thunky((cb) => {
         this.headless.id(cb)
     })
@@ -69,6 +70,26 @@ function Puppet (cabalkey, server, opts) {
     })
 }
 
+Puppet.prototype._retryWebsocket = function () {
+    this.setupWebsocket((err) => {
+        if (err) { 
+            log(`still no wss connection. retrying in ${this.SERVER_TIMEOUT/1000}s`)
+            setTimeout(this._retryWebsocket.bind(this), this.SERVER_TIMEOUT) 
+            return
+        }
+        this.register()
+    })
+}
+
+Puppet.prototype._heartbeat = function () {
+    clearTimeout(this._timeout)
+    this._timeout = setTimeout(() => {
+        this.ws.terminate()
+        log(`lost connection to websocket server, trying to reestablish`)
+        this._retryWebsocket()
+    }, this.SERVER_TIMEOUT)
+}
+
 Puppet.prototype.setupWebsocket = function (cb) {
     if (!cb) cb = function () {}
     this.ws = new WebSocket(this.server)
@@ -79,16 +100,17 @@ Puppet.prototype.setupWebsocket = function (cb) {
 
     this.ws.on("open", () => {
         log("open")
-        this.ws.ping(() => {})
+        this.ws.ping(this._heartbeat.bind(this))
         cb(null)
     })
 
     this.ws.on("ping", () => {
-        this.ws.ping(() => {})
+        this.ws.ping(this._heartbeat.bind(this))
         log("ping")
     })
 
     this.ws.on("pong", function () {
+        clearTimeout(this._timeout)
         log("pong")
     })
 
