@@ -80,6 +80,10 @@ function Puppet (cabalkey, server, opts) {
         },
         setNick: (nick) => {
             this.nick(nick)
+        },
+        shutdown: () => {
+            console.log("shutting down puppet")
+            process.exit()
         }
     }
 

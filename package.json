@@ -4,7 +4,7 @@
   "description": "cabal replication diagnostics",
   "main": "index.js",
   "bin": {
-    "crepes": "minimal-puppet.js"
+    "crepes": "puppet.js"
   },
   "dependencies": {
     "cabal-core": "^5.1.2",
@@ -24,7 +24,9 @@
     "standard": "^11.0.1"
   },
   "scripts": {
-    "test": "standard --fix"
+    "test": "standard --fix",
+    "start": "node central.js",
+    "puppet": "node puppet.js --addr http://localhost:8877"
   },
   "repository": {
     "type": "git",

@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", load)
 
-var commands = ["stat", "start", "stop", "connect", "disconnect"]
+var commands = ["stat", "start", "stop", "connect", "disconnect", "spawn", "shutdown"]
 
 function el (node) {
     return document.createElement(node)
@@ -28,6 +28,7 @@ function engageWebsockets () {
         console.log(evt)
         console.log(evt.data)
         log(evt.data)
+        processMessage(evt.data)
     })
 }
 
@@ -37,6 +38,66 @@ function instantiate (cmd) {
         POST({ url: `${cmd}/${puppetid}`, cb: log})
     }
     createButton(cmd, action)
+}
+
+function processMessage (msg) {
+    console.log(msg)
+
+    // if new node
+    // addNode(msg)
+}
+
+function setupD3 () {
+    var color = d3.scale.category20()
+    var options = {
+        element: "#canvas",
+        withLabels: true, 
+        height: 300,
+        width:600,
+        layoutAttr: {
+            charge: -120,
+            linkDistance: 80
+        },
+        nodeAttr: {
+            r: 20,
+            title: function(d) { return d.label}
+        },
+        nodeStyle: {
+            fill: function(d) { 
+                return color(d.data.group) 
+            },
+            stroke: "none"
+        },
+        labelStyle: {fill: "white"},
+        edgeStyle: {
+            fill: "#999"
+        }
+    }
+}
+
+function addNode () {
+    // var peerList = new Set()
+    // var nodeNum = 1
+    // var localNode
+    // var gotLocal = false
+    socket.on("peer", function(info) {
+        localNode = info.local_key.substr(0, 3) 	
+        if (gotLocal == false) {
+            G.addNodesFrom([localNode], { group: 1 })
+            jsnx.draw(G, options) 
+            gotLocal = true
+        }
+
+        peer = info.peer.substr(0, 3)
+        if (peerList.has(peer) == false) {
+            peerList.add(peer)
+            G.addNode(peer, { group: 0 })
+            peerList.forEach(function(i) {
+                G.addEdgesFrom([[localNode, i], [i, localNode]])
+            })
+            jsnx.draw(G, options) 
+        }
+    })
 }
 
 function createButton (cmd, action) {

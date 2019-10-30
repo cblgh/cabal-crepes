@@ -121,6 +121,11 @@ CentralWSS.prototype.stat = function (puppetid) {
     return this._log("stat", puppetid)
 }
 
+CentralWSS.prototype.shutdown = function (puppetid) {
+    this._send(puppetid, { type: "shutdown" })
+    return this._log("shutdown", puppetid)
+}
+
 CentralWSS.prototype._send = function (puppetid, obj) {
     if (!this.puppets[puppetid]) return 
     this.puppets[puppetid].send(JSON.stringify(obj))
