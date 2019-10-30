@@ -5,71 +5,37 @@ var minimist = require("minimist")
 var argv = minimist(process.argv.slice(2))
 var fs = require("fs")
 var configPath = argv.conf || "crepes.conf" 
-
 var conf = ["", ""]
+
 try {
     conf = fs.readFileSync(configPath).toString().split("\n").filter((l) => l.length > 0)
 } catch (err) {
     if (!argv.addr) die("Running without crepes.conf: no --addr arg found, terminating")
     if (!argv.cabal) die("Running without crepes.conf: no --cabal arg found, terminating")
 }
+
 var key = argv.cabal || conf[0]
 var addr = argv.addr || conf[1]
 
 function Puppet (cabalkey, server, opts) {
     if (!(this instanceof Puppet)) return new Puppet(cabalkey, opts)
     if (!opts) opts = {}
+    this.server = server
     this.cabalkey = cabalkey.replace("cabal://", "").replace("cbl://", "")
-    this.ws = new WebSocket(server)
     this.headless = Headless(cabalkey, { temp: opts.temp || false })
     this.POST_INTERVAL = 5000 /* ms */
+    this.SERVER_TIMEOUT = 8000 /* ms */ 
     this.localKey = thunky((cb) => {
         this.headless.id(cb)
     })
 
-    /* wss keep-alive junk */
-    // this._heartbeat = () => {
-    //     clearTimeout(this._pingTimeout)
-    //     this._pingTimeout = setTimeout(() => {
-    //         this.ws.terminate()
-    //         console.log("TERMINATED!!!!!!!!!")
-    //         console.log("TERMINATED!!!!!!!!!")
-    //         console.log("TERMINATED!!!!!!!!!")
-    //         console.log("TERMINATED!!!!!!!!!")
-    //     }, 15000)
-    // }
-    // this.ws.on("open", this._heartbeat)
-    // 
-    // this.ws.on("close", () => {
-    //     clearTimeout(this._pingTimeout)
-    // })
-
-    function date () {
-        return new Date().toISOString().split("T")[1].split(".")[0]
-    }
-
-    this.ws.on("ping", () => {
-        this.ws.ping(() => {})
-        console.log(date(), "ping")
-    })
-
-    this.ws.on("pong", function () {
-        console.log(date(), "pong")
-    })
-
-    this.ws.on("open", () => {
-        console.log("open")
-        this.register()
-        this.ws.ping(() => {})
-    })
-
     this.wsevents = {
         connect: () => {
-            console.log("connect to swarm")
+            log("connect to swarm")
             this.headless.connect()
         },
         disconnect: () => {
-            console.log("disconnect from swarm")
+            log("disconnect from swarm")
             this.headless.disconnect()
         },
         startPosting: () => {
@@ -87,20 +53,15 @@ function Puppet (cabalkey, server, opts) {
         }
     }
 
-    this.ws.on("message", (m) => {
-        m = JSON.parse(m)
-        if (m.type in this.wsevents) this.wsevents[m.type](m.data)
-    })
-
     this.headless.onPeerConnected((peerId) => {
         this.send({ type: "peerConnected", data: peerId})
-        console.log(`${peerId} connected`)
-        console.log('got peers', this.headless.peers())
+        log(`${peerId} connected`)
+        log(`${this.headless.peers().length()} peers connected`)
     })
 
     this.headless.onPeerDisconnected((peerId) => {
         this.send({ type: "peerDisconnected", data: peerId})
-      console.log(`${peerId} left`)
+        log(`${peerId} left`)
     })
 
     this.headless.onMessageReceived((data) => {
@@ -113,9 +74,65 @@ function Puppet (cabalkey, server, opts) {
     })
 }
 
-Puppet.prototype.init = function () {
-    this.headless.nick('headless')
-    this.headless.connect()
+Puppet.prototype._retryWebsocket = function () {
+    this.setupWebsocket((err) => {
+        if (err) { 
+            log(`still no wss connection. retrying in ${this.SERVER_TIMEOUT/1000}s`)
+            setTimeout(this._retryWebsocket.bind(this), this.SERVER_TIMEOUT) 
+            return
+        }
+        this.register()
+    })
+}
+
+Puppet.prototype._heartbeat = function () {
+    clearTimeout(this._timeout)
+    this._timeout = setTimeout(() => {
+        this.ws.terminate()
+        log(`lost connection to websocket server, trying to reestablish`)
+        this._retryWebsocket()
+    }, this.SERVER_TIMEOUT)
+}
+
+Puppet.prototype.setupWebsocket = function (cb) {
+    if (!cb) cb = function () {}
+    this.ws = new WebSocket(this.server)
+
+    this.ws.on("error", function (e) {
+        cb(e)
+    })
+
+    this.ws.on("open", () => {
+        log("open")
+        this.ws.ping(this._heartbeat.bind(this))
+        cb(null)
+    })
+
+    this.ws.on("ping", () => {
+        this.ws.ping(this._heartbeat.bind(this))
+        log("ping")
+    })
+
+    this.ws.on("pong", function () {
+        clearTimeout(this._timeout)
+        log("pong")
+    })
+
+    this.ws.on("message", (m) => {
+        m = JSON.parse(m)
+        if (m.type in this.wsevents) this.wsevents[m.type](m.data)
+    })
+}
+
+
+Puppet.prototype.init = function (cb) {
+    this.setupWebsocket((err) => {
+        if (err) { return cb(err) } 
+        this.register()
+        this.headless.nick('headless')
+        this.headless.connect()
+        cb(null)
+    })
 }
 
 Puppet.prototype.send = function (obj) {
@@ -132,7 +149,7 @@ Puppet.prototype.post = function (msg) {
 }
 
 Puppet.prototype.nick = function (nick) {
-    console.log("change nick :))")
+    log("change nick")
     this.headless.nick(nick)
     this.send({ type: "nickChanged", data: nick })
 }
@@ -147,7 +164,7 @@ Puppet.prototype.startPosting = function () {
 }
 
 Puppet.prototype.stopPosting = function () {
-    console.log("stop posting")
+    log("stop posting")
     if (this.postloop) {
         clearInterval(this.postloop)
     }
@@ -167,5 +184,21 @@ function die (msg) {
     process.exit(1)
 }
 
-var puppet = new Puppet(key, addr, { temp: argv.temp })
-puppet.init()
+function log (msg) {
+    var time = new Date().toISOString().split("T")[1].split(".")[0]
+    process.stdout.write(`[${time}] ${msg}\n`)
+}
+
+function setup () {
+    var retryTime = argv.retry || 10000
+    var puppet = new Puppet(key, addr, { temp: argv.temp })
+    puppet.init((err) => {
+        if (err) {
+            log(`couldn't connect to ${addr}`)
+            log(`retrying in ${retryTime/1000}s`)
+            setTimeout(setup, retryTime)
+        }
+    })
+}
+
+setup()
