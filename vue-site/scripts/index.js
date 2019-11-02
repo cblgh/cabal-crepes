@@ -2,13 +2,14 @@ Vue.component("base-view", {
     template: `
         <div class="container">
             <select id="puppet" placeholder="currentPuppet" v-model="currentPuppet">
-                <option v-for="puppet in puppets" :value="puppet.nick">{{ puppet.nick }}</option>
+                <option v-for="puppet in puppets" :value="puppet.peerid">{{ puppet.nick }}</option>
             </select>
             <button v-for="command in commands" @click="sendCommand(command)">{{ command }}</button>
             <div id="canvas"></div>
             <div class="panels">
-                <div id="chat-view">
-                    <div v-for="msg in chat">
+                <div v-if="puppets !== {}" id="chat-view">
+                    <h3>{{ currentPuppet }} view</h3>
+                    <div v-for="msg in chat[currentPuppet]">
                         {{ formatDate(msg.timestamp) }} <{{puppets[msg.author].nick}}> {{msg.message}}
                     </div>
                 </div>
@@ -22,7 +23,7 @@ Vue.component("base-view", {
         return {
             commands: ["stat", "start", "stop", "connect", "disconnect", "spawn", "shutdown"],
             logs: [],
-            chat: [],
+            chat: {},
             puppets: {},
             count: 0,
             currentPuppet: ""
@@ -43,7 +44,8 @@ Vue.component("base-view", {
     },
     methods: {
         sendCommand (command) {
-            this.POST({ url: `${command}/${this.idFromNick(this.currentPuppet)}`, cb: this.log})
+            console.log(this.idFromPeerid(this.currentPuppet))
+            this.POST({ url: `${command}/${this.idFromPeerid(this.currentPuppet)}`, cb: this.log})
         },
         pad (i) {
             return parseInt(i) < 10 ? 0 + i : i
@@ -56,21 +58,25 @@ Vue.component("base-view", {
             var time = new Date().toISOString().split("T")[1].split(".")[0]
             this.logs.push(`[${time}] ${msg}`)
         },
-        idFromNick (nick) {
-            for (let puppet of Object.values(this.puppets)) {
-                if (puppet.nick === nick) return puppet.id
-            }
-            return -1
+        idFromPeerid (peerid) {
+            console.log(this.puppets, peerid)
+            if (!(peerid in this.puppets)) { return -1 }
+            return this.puppets[peerid].id
         },
         processMessage (msg) {
             let data = JSON.parse(msg)
             if (data.type === "register") {
                 nodeGraph.addNode(data)
-                this.puppets[data.peerid] = { id: this.count, nick: data.peerid, cabal: data.cabal }
+                this.puppets[data.peerid] = { id: this.count, nick: data.peerid, cabal: data.cabal, peerid: data.peerid }
             } else if (data.type === "nickChanged") {
                 this.puppets[data.peerid].nick = data.data
             } else if (data.type === "messagePosted") {
-                this.chat.push({ message: data.data, author: data.peerid, timestamp: +(new Date()) })
+                if (!(data.peerid in this.chat)) this.chat[data.peerid] = []
+                this.chat[data.peerid].push({ message: data.data, author: data.peerid, timestamp: +(new Date()) })
+            } else if (data.type === "messageReceived") {
+                let msg = data.data
+                if (!(data.peerid in this.chat)) this.chat[data.peerid] = []
+                this.chat[data.peerid].push({ message: msg.contents, author: msg.peerid, timestamp: +(new Date()) })
             }
         },
         POST (opts) {

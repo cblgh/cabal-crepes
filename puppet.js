@@ -65,12 +65,12 @@ function Puppet (cabalkey, server, opts) {
     })
 
     this.headless.onMessageReceived((data) => {
-        var peerId = data.key
+        var peerid = data.key
         var contents
         if (data.value && data.value.content && data.value.content.text) {
             contents = data.value.content.text
         }
-        this.send({ type: "messageReceived", data: { peerId, contents }})
+        this.send({ type: "messageReceived", data: { peerid, contents }})
     })
 }
 
