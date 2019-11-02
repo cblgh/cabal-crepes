@@ -5,7 +5,7 @@ var static = require("serve-static")
 var path = require("path")
 var { spawn } = require("child_process")
 
-var public = path.join(__dirname, "/site")
+var public = path.join(__dirname, "/vue-site")
 var app = express()
 app.use(static(public))
 var port = 8877

@@ -2,17 +2,16 @@
     <head>
         <meta charset="UTF-8">
         <link rel="stylesheet" href="links/style.css">
+        <script src="scripts/vue.js"></script>
         <script src="https://d3js.org/d3.v3.min.js"></script>
         <script src="scripts/jsnetworkx.js" type="text/javascript"></script>
         <script src="scripts/graph.js"></script>
         <script> let nodeGraph = new Graph() </script>
-        <script src="scripts/marionette.js"></script>
+        <script defer src="scripts/index.js"></script>
     </head>
     <body>
-        <input id="puppet" placeholder="puppetid">
-        <input id="puppetname" placeholder="desired puppet name">
-        <div id="canvas"></div>
-        <div id="controls"></div>
-        <div id="terminal"></div>
+        <div id="mount">
+            <base-view></base-view>
+        </div>
     </body>
 </html>

@@ -22,7 +22,7 @@ function Puppet (cabalkey, server, opts) {
     if (!opts) opts = {}
     this.server = server
     this.cabalkey = cabalkey.replace("cabal://", "").replace("cbl://", "")
-    this.headless = Headless(cabalkey, { temp: opts.temp || false })
+    this.headless = Headless(cabalkey, { temp: opts.temp || true })
     this.POST_INTERVAL = 5000 /* ms */
     this.SERVER_TIMEOUT = 8000 /* ms */ 
     this.localKey = thunky((cb) => {
@@ -56,7 +56,7 @@ function Puppet (cabalkey, server, opts) {
     this.headless.onPeerConnected((peerId) => {
         this.send({ type: "peerConnected", data: peerId})
         log(`${peerId} connected`)
-        log(`${this.headless.peers().length()} peers connected`)
+        log(`${this.headless.peers().length} peers connected`)
     })
 
     this.headless.onPeerDisconnected((peerId) => {
