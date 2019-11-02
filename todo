@@ -1,6 +1,9 @@
-* write events to a hypercore and create a kappa view for current state of puppets (for use in web interface)
-* write events to a sql database
-* create dynamic swarm graphics
+* send entire state w # puppets etc  on consumer connect
+* design integration for actions from one peer to another
+    * a trust b <x> amount
+    * a netblocks b
+
+// old
 * style site
 
 making crepes easily depoyable
