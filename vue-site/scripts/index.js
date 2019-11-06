@@ -170,10 +170,6 @@ Vue.component("base-view", {
             var time = new Date().toISOString().split("T")[1].split(".")[0]
             this.logs.push(`[${time}] ${msg}`)
         },
-        idFromPeerid (peerid) {
-            if (!(peerid in this.puppets)) { return -1 }
-            return this.puppets[peerid].id
-        },
         processMessage (msg) {
             let data = JSON.parse(msg)
             if (data.type === "register") {
