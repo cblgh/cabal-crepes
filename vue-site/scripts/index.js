@@ -1,3 +1,4 @@
+/*
 Vue.component("base-component", {
     template: `
     <div>
@@ -7,16 +8,17 @@ Vue.component("base-component", {
     methods: {
     },
     computed: {
-    }
+    },
     data () {
         return {
 
         },
     }
 })
+*/
 
 Vue.component("base-title", {
-    template: `<div @click=handleClick class="base-title"> {{ title }} </div>`
+    template: `<div @click=handleClick class="base-title"> {{ title }} </div>`,
     props: {
         title: String,
         handleClick: {
@@ -69,18 +71,18 @@ Vue.component("puppet-listing", {
 Vue.component("base-button", {
     template: `
     <div>
-    <button @click="handleClick">{{ text }}</button>
+        <button @click="handleClick">{{ text }}</button>
     </div>
     `,
-    props: ["text", handleClick],
+    props: ["text", "handleClick"],
     methods: {
     },
     computed: {
-    }
+    },
     data () {
         return {
 
-        },
+        }
     }
 })
 
@@ -92,16 +94,21 @@ Vue.component("base-view", {
                 <option v-for="puppet in puppets" :value="puppet.peerid">{{ puppet.nick }}</option>
             </select>
             <button v-for="command in commands" @click="sendCommand(command)">{{ command }}</button>
-            <div id="canvas"></div>
             <div class="panels">
-                <div v-if="puppets !== {}" id="chat-view">
-                    <h3>{{ currentPuppet }} view</h3>
-                    <div v-for="msg in chat[currentPuppet]">
-                        {{ formatDate(msg.timestamp) }} <{{puppets[msg.author].nick}}> {{msg.message}}
+                <div id="canvas"></div>
+                <div class="log-panel">
+                    <button @click="debug = !debug"> {{ debug ? "chat" : "debug" }}</button>
+                    <div v-show="debug" class="debug" :class="{'active-scroller': debug}">
+                        <div v-for="log in logs">{{ log }}</div>
                     </div>
-                </div>
-                <div id="terminal">
-                    <div v-for="log in logs">{{ log }}</div>
+                    <div v-show="!debug" class="chat" :class="{'active-scroller': !debug}">
+                        <h3>{{ puppetNick(currentPuppet) }}:{{ currentPuppet.slice(0, 4) }}</h3>
+                        <div id="chat">
+                            <div v-for="msg in chat[currentPuppet]">
+                                {{ formatDate(msg.timestamp) }} <{{ puppetNick(msg.author) }}> {{ msg.message }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -111,6 +118,7 @@ Vue.component("base-view", {
             commands: ["stat", "start", "stop", "connect", "disconnect", "spawn", "shutdown"],
             logs: [],
             chat: {},
+            debug: false,
             puppets: {},
             count: 0,
             currentPuppet: ""
@@ -130,9 +138,18 @@ Vue.component("base-view", {
         })
     },
     methods: {
+        puppetNick (puppet) {
+            return puppet in this.puppets ? this.puppets[puppet].nick : ""
+        },
         sendCommand (command) {
             console.log(this.idFromPeerid(this.currentPuppet))
             this.POST({ url: `${command}/${this.idFromPeerid(this.currentPuppet)}`, cb: this.log})
+        },
+        scrollIntoView () {
+            var hovering = document.querySelector('.active-scroller:hover')
+            if (hovering) return
+            var scroller = document.querySelector('.active-scroller')
+            scroller.scrollTop = scroller.scrollHeight - scroller.clientHeight
         },
         pad (i) {
             return parseInt(i) < 10 ? 0 + i : i
@@ -165,6 +182,7 @@ Vue.component("base-view", {
                 if (!(data.peerid in this.chat)) this.chat[data.peerid] = []
                 this.chat[data.peerid].push({ message: msg.contents, author: msg.peerid, timestamp: +(new Date()) })
             }
+            this.scrollIntoView()
         },
         POST (opts) {
             if (!opts.cb) opts.cb = noop
