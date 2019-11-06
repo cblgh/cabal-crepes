@@ -1,3 +1,90 @@
+Vue.component("base-component", {
+    template: `
+    <div>
+    </div>
+    `,
+    props: [],
+    methods: {
+    },
+    computed: {
+    }
+    data () {
+        return {
+
+        },
+    }
+})
+
+Vue.component("base-title", {
+    template: `<div @click=handleClick class="base-title"> {{ title }} </div>`
+    props: {
+        title: String,
+        handleClick: {
+            type: Function,
+            required: false
+        }
+    }
+})
+
+Vue.component("base-dropdown", {
+    template: `
+    <select>
+        <option v-for="item in items">
+    </select>
+    `,
+    props: ["items"]
+})
+
+Vue.component("scrollable-listing", {
+    template: `
+        <div class="scrollable-container">
+            <div v-for="log in logs">{{ log }}</div>
+        </div>
+    `,
+    props: ["logs"]
+})
+
+Vue.component("puppet-listing", {
+    template: `
+    <div class="puppet-listing-container">
+        <div class="puppet-title"> {{ title }} </div>
+        <template v-if="subheading">
+            <div class="puppet-title-subheading">{{ subheading }}</div>
+        </template>
+        <div class="puppet-listing-items">
+            <div v-for="item in items"> {{ item }} </div>
+        </div>
+    </div>
+    `,
+    props: {
+        "title": String,
+        "items": Array,
+        "subheading": {
+            required: false,
+            type: String
+        }
+    }
+})
+
+Vue.component("base-button", {
+    template: `
+    <div>
+    <button @click="handleClick">{{ text }}</button>
+    </div>
+    `,
+    props: ["text", handleClick],
+    methods: {
+    },
+    computed: {
+    }
+    data () {
+        return {
+
+        },
+    }
+})
+
+
 Vue.component("base-view", {
     template: `
         <div class="container">
