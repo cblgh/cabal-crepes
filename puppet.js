@@ -171,7 +171,9 @@ Puppet.prototype.stopPosting = function () {
 }
 
 Puppet.prototype.register = function () {
-    this.send({ type: "register", role: "puppet"})
+    this.localKey((peerid) => {
+        this.send({ type: "register", role: "puppet", peerid })
+    })
 }
 
 function startInterval (f, interval) {

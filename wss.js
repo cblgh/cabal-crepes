@@ -13,7 +13,7 @@ function CentralWSS (server) {
      * ingest config to generate http & ws routes, generalizing the structure
      * */
     
-    this.puppets = []
+    this.puppets = {}
     this.consumers = []
 
     this.wsevents = {
@@ -21,9 +21,9 @@ function CentralWSS (server) {
             sock.role = data.role
             if (data.role === "consumer") this.consumers.push(sock)
             if (data.role === "puppet") {
-                this.puppets.push(sock)
-                var puppetid = this.puppets.length - 1
-                this.name(puppetid, NAMES[puppetid])
+                this.puppets[data.peerid] = sock
+                var puppetCount = Object.values(this.puppets).length - 1
+                this.name(data.peerid, NAMES[puppetCount])
                 this.emit("register", data)
                 console.log("new puppet online")
             }
@@ -54,7 +54,12 @@ function CentralWSS (server) {
         this.sockets.forEach((sock) => {
             if (!sock.alive) {
                 console.log("sock died")
-                if (sock.role === "puppet") { this.puppets.splice(this.puppets.indexOf(sock), 1) }
+                if (sock.role === "puppet") { 
+                    const [key, value] = [0, 1]
+                    Object.entries(this.puppets).forEach((pair) => { 
+                        if (pair[value] === sock) delete this.puppets[pair[key]]
+                    })
+                }
                 if (sock.role === "consumer") { this.consumers.splice(this.consumers.indexOf(sock), 1) }
                 this.sockets.splice(this.sockets.indexOf(sock), 1)
                 sock.terminate()
@@ -127,7 +132,7 @@ CentralWSS.prototype.shutdown = function (puppetid) {
 }
 
 CentralWSS.prototype._send = function (puppetid, obj) {
-    if (!this.puppets[puppetid]) return 
+    if (!(puppetid in this.puppets)) return 
     this.puppets[puppetid].send(JSON.stringify(obj))
 }
 
@@ -141,10 +146,10 @@ CentralWSS.prototype.shutdownAll = function () {
 }
 
 CentralWSS.prototype._log = function (command, puppetid) {
-    if (!this.puppets[puppetid]) {
-        msg = `${puppetid}: no such puppet`
+    if (!(puppetid in this.puppets)) {
+        msg = `${puppetid.slice(0, 3)}: no such puppet`
     }  else { 
-        msg = `${command} puppet#${puppetid}`
+        msg = `${command} puppet.${puppetid.slice(0, 3)}`
     }
     return msg
 }

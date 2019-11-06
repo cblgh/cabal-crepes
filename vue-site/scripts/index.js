@@ -151,7 +151,7 @@ Vue.component("base-view", {
             return puppet in this.puppets ? this.puppets[puppet].nick : ""
         },
         sendCommand (command) {
-            this.POST({ url: `${command}/${this.idFromPeerid(this.currentPuppet)}`, cb: this.log})
+            this.POST({ url: `${command}/${this.currentPuppet ? this.currentPuppet : -1}`, cb: this.log})
         },
         scrollIntoView () {
             var hovering = document.querySelector('.active-scroller:hover')
@@ -206,7 +206,7 @@ Vue.component("base-view", {
                 .then(res => res.json()).then(opts.cb)
                 .catch((err) => {
                     console.error(err)
-                    log(`Error: ${opts.url} doesn't return json`)
+                    this.log(`Error: ${opts.url} doesn't return json`)
                 })
         }
     }
