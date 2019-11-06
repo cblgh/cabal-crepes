@@ -132,9 +132,18 @@ Vue.component("base-view", {
         })
 
         socket.addEventListener("message", (evt) => {
-            console.log(evt.data)
             this.log(evt.data)
             this.processMessage(evt.data)
+
+            document.querySelectorAll("g.node").forEach((node) => {
+                if (node.listener) return 
+                let listener = (e) => {
+                    let d3data = d3.select(node).datum().data
+                    this.currentPuppet = d3data.peerid
+                }
+                node.addEventListener("click", listener)
+                node.listener = listener
+            })
         })
     },
     methods: {
@@ -172,6 +181,7 @@ Vue.component("base-view", {
             if (data.type === "register") {
                 nodeGraph.addNode(data)
                 this.puppets[data.peerid] = { id: this.count, nick: data.peerid, cabal: data.cabal, peerid: data.peerid }
+                this.count += 1
             } else if (data.type === "nickChanged") {
                 this.puppets[data.peerid].nick = data.data
             } else if (data.type === "messagePosted") {

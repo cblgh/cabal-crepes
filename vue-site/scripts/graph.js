@@ -32,14 +32,10 @@ function Graph () {
 Graph.prototype.addNode = function (info) {
         let node = info.peerid.substr(0, 3) 	
         let cabal = info.cabal.substr(0, 3)
-        // if (gotLocal == false) {
-        //     this.graph.addNodesFrom([node], { group: 1 })
-        //     gotLocal = true
-        // }
 
         if (this.peers.has(node) === false) {
             this.peers.add(node)
-            this.graph.addNode(node, { group: 0 })
+            this.graph.addNode(node, { group: 0, peerid: info.peerid, cabal: info.cabal })
             this.peers.forEach((i) => {
                 this.graph.addEdgesFrom([[cabal, i], [i, cabal]])
             })
