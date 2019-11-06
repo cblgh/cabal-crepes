@@ -102,7 +102,7 @@ Vue.component("base-view", {
                         <div v-for="log in logs">{{ log }}</div>
                     </div>
                     <div v-show="!debug" class="chat" :class="{'active-scroller': !debug}">
-                        <h3>{{ puppetNick(currentPuppet) }}:{{ currentPuppet.slice(0, 4) }}</h3>
+                        <h3>{{ puppetNick(currentPuppet) }}:{{ currentPuppet.slice(0, 3) }}</h3>
                         <div id="chat">
                             <div v-for="msg in chat[currentPuppet]">
                                 {{ formatDate(msg.timestamp) }} <{{ puppetNick(msg.author) }}> {{ msg.message }}
@@ -139,7 +139,7 @@ Vue.component("base-view", {
                 if (node.listener) return 
                 let listener = (e) => {
                     let d3data = d3.select(node).datum().data
-                    this.currentPuppet = d3data.peerid
+                    if (d3data.peerid && d3data.peerid in this.puppets) this.currentPuppet = d3data.peerid
                 }
                 node.addEventListener("click", listener)
                 node.listener = listener
@@ -151,7 +151,6 @@ Vue.component("base-view", {
             return puppet in this.puppets ? this.puppets[puppet].nick : ""
         },
         sendCommand (command) {
-            console.log(this.idFromPeerid(this.currentPuppet))
             this.POST({ url: `${command}/${this.idFromPeerid(this.currentPuppet)}`, cb: this.log})
         },
         scrollIntoView () {
@@ -172,7 +171,6 @@ Vue.component("base-view", {
             this.logs.push(`[${time}] ${msg}`)
         },
         idFromPeerid (peerid) {
-            console.log(this.puppets, peerid)
             if (!(peerid in this.puppets)) { return -1 }
             return this.puppets[peerid].id
         },
