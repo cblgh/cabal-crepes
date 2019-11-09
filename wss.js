@@ -12,16 +12,24 @@ function CentralWSS (server) {
      * add join(cabalkey) to puppet
      * ingest config to generate http & ws routes, generalizing the structure
      * */
-    
+
+    /* this.puppets = { sock: ws socket, connected: true, posting: false, posted: []) */
     this.puppets = {}
     this.consumers = []
 
     this.wsevents = {
         "register": (data, sock) => {
             sock.role = data.role
-            if (data.role === "consumer") this.consumers.push(sock)
+            if (data.role === "consumer") { 
+                this.consumers.push(sock)
+                let socklessPuppets = JSON.parse(JSON.stringify(this.puppets))
+                Object.keys(socklessPuppets).forEach((puppetid) => {
+                    delete socklessPuppets[puppetid].sock
+                })
+                sock.send(JSON.stringify({ type: "initialize", data: JSON.stringify(socklessPuppets) }))
+            }
             if (data.role === "puppet") {
-                this.puppets[data.peerid] = sock
+                this.puppets[data.peerid] = { sock, connected: true, posting: false, posted: [], received: [], cabal: data.cabal }
                 var puppetCount = Object.values(this.puppets).length - 1
                 this.name(data.peerid, NAMES[puppetCount])
                 this.emit("register", data)
@@ -38,9 +46,14 @@ function CentralWSS (server) {
             this.emit("peerDisconnected", data)
         },
         "messageReceived": (data) => {
+            let msg = data.data
+            if (!(data.peerid in this.puppets)) return
+            this.puppets[data.peerid].received.push({ author: msg.peerid, content: msg.contents, time: data.time})
             this.emit("messageReceived", data)
         },
         "messagePosted": (data) => {
+            if (!(data.peerid in this.puppets)) return
+            this.puppets[data.peerid].posted.push({ author: data.peerid, content: data.data, time: data.time})
             this.emit("messagePosted", data)
         },
         "nickChanged": (data) => {
@@ -53,16 +66,22 @@ function CentralWSS (server) {
     var heartbeat = setInterval(() => {
         this.sockets.forEach((sock) => {
             if (!sock.alive) {
-                console.log("sock died")
+                console.log("sock died, type of", sock.role)
                 if (sock.role === "puppet") { 
-                    const [key, value] = [0, 1]
-                    Object.entries(this.puppets).forEach((pair) => { 
-                        if (pair[value] === sock) delete this.puppets[pair[key]]
+                    Object.keys(this.puppets).forEach((puppetid) => { 
+                        if (this.puppets[puppetid].sock === sock) {
+                            delete this.puppets[puppetid]
+                        }
                     })
                 }
                 if (sock.role === "consumer") { this.consumers.splice(this.consumers.indexOf(sock), 1) }
                 this.sockets.splice(this.sockets.indexOf(sock), 1)
                 sock.terminate()
+                if (this.sockets.length === 0) {
+                    // make sure all state is cleaned
+                    this.puppets = {}
+                    this.consumers = []
+                }
             }
             sock.alive = false
             sock.ping(() => {})
@@ -99,31 +118,40 @@ function CentralWSS (server) {
 */
 CentralWSS.prototype.name = function (puppetid, name) {
     this._send(puppetid, { type: "setNick", data: name})
+    this.puppets[puppetid].nick = name
     return this._log(`set name to ${name} for `, puppetid)
 }
 
 CentralWSS.prototype.connect = function (puppetid) {
     this._send(puppetid, { type: "connect" })
+    this.puppets[puppetid].connected = true
     return this._log("connect", puppetid)
 }
 
 CentralWSS.prototype.disconnect = function (puppetid) {
     this._send(puppetid, { type: "disconnect" })
+    this.puppets[puppetid].connected = false
     return this._log("disconnect", puppetid)
 }
 
 CentralWSS.prototype.start = function (puppetid) {
     this._send(puppetid, { type: "startPosting" })
+    this.puppets[puppetid].posting = true
     return this._log("start posting", puppetid)
 }
 
 CentralWSS.prototype.stop = function (puppetid) {
     this._send(puppetid, { type: "stopPosting" })
+    this.puppets[puppetid].posting = false
     return this._log("stop posting", puppetid)
 }
 
-CentralWSS.prototype.stat = function (puppetid) {
-    return this._log("stat", puppetid)
+CentralWSS.prototype.state = function (puppetid) {
+    if (!(puppetid in this.puppets)) return {}
+    let state = JSON.parse(JSON.stringify(this.puppets[puppetid])) // clone
+    delete state.sock
+    return JSON.stringify(state)
+    this._log("state", puppetid)
 }
 
 CentralWSS.prototype.shutdown = function (puppetid) {
@@ -133,7 +161,7 @@ CentralWSS.prototype.shutdown = function (puppetid) {
 
 CentralWSS.prototype._send = function (puppetid, obj) {
     if (!(puppetid in this.puppets)) return 
-    this.puppets[puppetid].send(JSON.stringify(obj))
+    this.puppets[puppetid].sock.send(JSON.stringify(obj))
 }
 
 CentralWSS.prototype.connectAll = function () {

@@ -33,9 +33,9 @@ app.post("/stop/:puppet", (req, res) => {
     res.json({ msg }).send()
 })
 
-app.post("/stat/:puppet", (req, res) => {
-    console.log("stat puppet", req.params.puppet)
-    var msg = central.stat(req.params.puppet)
+app.post("/state/:puppet", (req, res) => {
+    console.log("get state for puppet", req.params.puppet)
+    var msg = central.state(req.params.puppet)
     res.json({ msg }).send()
 })
 

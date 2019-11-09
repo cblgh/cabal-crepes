@@ -40,10 +40,10 @@ Vue.component("base-dropdown", {
 Vue.component("scrollable-listing", {
     template: `
         <div class="scrollable-container">
-            <div v-for="log in logs">{{ log }}</div>
+            <div v-for="log in rawlogs">{{ log }}</div>
         </div>
     `,
-    props: ["logs"]
+    props: ["rawlogs"]
 })
 
 Vue.component("puppet-listing", {
@@ -99,7 +99,7 @@ Vue.component("base-view", {
                 <div class="log-panel">
                     <button @click="debug = !debug"> {{ debug ? "chat" : "debug" }}</button>
                     <div v-show="debug" class="debug" :class="{'active-scroller': debug}">
-                        <div v-for="log in logs">{{ log }}</div>
+                        <div v-for="log in rawlogs">{{ log }}</div>
                     </div>
                     <div v-show="!debug" class="chat" :class="{'active-scroller': !debug}">
                         <h3>{{ puppetNick(currentPuppet) }}:{{ currentPuppet.slice(0, 3) }}</h3>
@@ -115,12 +115,11 @@ Vue.component("base-view", {
     `,
     data () {
         return {
-            commands: ["stat", "start", "stop", "connect", "disconnect", "spawn", "shutdown"],
-            logs: [],
+            commands: ["state", "start", "stop", "connect", "disconnect", "spawn", "shutdown"],
+            rawlogs: [],
             chat: {},
             debug: false,
             puppets: {},
-            count: 0,
             currentPuppet: ""
         }
     },
@@ -131,10 +130,12 @@ Vue.component("base-view", {
             socket.send(JSON.stringify({ type: "register", role: "consumer" }))
         })
 
+        // listen to all websocket events
         socket.addEventListener("message", (evt) => {
             this.log(evt.data)
             this.processMessage(evt.data)
 
+            // add click events to all d3 puppet nodes
             document.querySelectorAll("g.node").forEach((node) => {
                 if (node.listener) return 
                 let listener = (e) => {
@@ -168,14 +169,32 @@ Vue.component("base-view", {
         log (msg) {
             if (typeof msg === 'object') { msg = msg.msg } // unpack
             var time = new Date().toISOString().split("T")[1].split(".")[0]
-            this.logs.push(`[${time}] ${msg}`)
+            this.rawlogs.push(`[${time}] ${msg}`)
+        },
+        initializeState(data) {
+            // initialize the state for each puppet
+            Object.keys(data).forEach((puppetid) => {
+                let datum = data[puppetid]
+                this.puppets[puppetid] = { nick: datum.nick, cabal: datum.cabal, peerid: puppetid, connected: datum.connected, posting: datum.posting }
+                if (!(puppetid in this.chat)) this.chat[puppetid] = []
+                // add all of the messages the current node has posted itself
+                datum.posted.forEach((msg) => {
+                    this.chat[puppetid].push({ message: msg.content, author: msg.author, timestamp: msg.time })
+                })
+                // add all of the messages the current node has received from authors
+                datum.received.forEach((msg) => {
+                    this.chat[puppetid].push({ message: msg.content, author: msg.author, timestamp: msg.time })
+                })
+                // update d3 node graph
+                nodeGraph.addNode({ cabal: datum.cabal, peerid: puppetid })
+            this.chat[puppetid].sort((a, b) => parseInt(a.timestamp) - parseInt(b.timestamp))
+            })
         },
         processMessage (msg) {
             let data = JSON.parse(msg)
             if (data.type === "register") {
                 nodeGraph.addNode(data)
-                this.puppets[data.peerid] = { id: this.count, nick: data.peerid, cabal: data.cabal, peerid: data.peerid }
-                this.count += 1
+                this.puppets[data.peerid] = { nick: data.peerid, cabal: data.cabal, peerid: data.peerid, connected: true, posting: false }
             } else if (data.type === "nickChanged") {
                 this.puppets[data.peerid].nick = data.data
             } else if (data.type === "messagePosted") {
@@ -185,6 +204,8 @@ Vue.component("base-view", {
                 let msg = data.data
                 if (!(data.peerid in this.chat)) this.chat[data.peerid] = []
                 this.chat[data.peerid].push({ message: msg.contents, author: msg.peerid, timestamp: +(new Date()) })
+            } else if (data.type === "initialize") {
+                this.initializeState(JSON.parse(data.data))
             }
             this.scrollIntoView()
         },

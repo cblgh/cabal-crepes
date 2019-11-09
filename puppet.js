@@ -89,8 +89,9 @@ Puppet.prototype._heartbeat = function () {
     clearTimeout(this._timeout)
     this._timeout = setTimeout(() => {
         this.ws.terminate()
-        log(`lost connection to websocket server, trying to reestablish`)
-        this._retryWebsocket()
+        log("lost connection to websocket server, terminating")
+        // log(`lost connection to websocket server, trying to reestablish`)
+        // this._retryWebsocket()
     }, this.SERVER_TIMEOUT)
 }
 
