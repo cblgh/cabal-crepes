@@ -140,7 +140,7 @@ Puppet.prototype.send = function (obj) {
     this.localKey((key) => {
         obj["peerid"] = key
         obj["cabal"] = this.cabalkey
-        this.ws.send(JSON.stringify(obj))
+        this.ws.send(JSON.stringify(obj, null, 2))
     })
 }
 

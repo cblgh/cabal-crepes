@@ -121,7 +121,7 @@ Vue.component("base-view", {
                     <button @click="sendCommand('spawn')">new puppet</button>
                     <button @click="debug = !debug"> {{ debug ? "chat" : "debug" }}</button>
                     <div v-show="debug" class="debug" :class="{'active-scroller': debug}">
-                        <div v-for="log in rawlogs">{{ log }}</div>
+                        <pre v-for="log in rawlogs">{{ log }}</pre>
                     </div>
                     <div v-show="!debug" class="chat" :class="{'active-scroller': !debug}">
                         <h3 v-if="currentPuppet.length > 0">{{ puppetNick(currentPuppet) }}:{{ currentPuppet.slice(0, 3) }}</h3>
