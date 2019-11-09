@@ -26,10 +26,11 @@ function CentralWSS (server) {
                 Object.keys(socklessPuppets).forEach((puppetid) => {
                     delete socklessPuppets[puppetid].sock
                 })
+                console.log(socklessPuppets)
                 sock.send(JSON.stringify({ type: "initialize", data: JSON.stringify(socklessPuppets) }))
             }
             if (data.role === "puppet") {
-                this.puppets[data.peerid] = { sock, connected: true, posting: false, posted: [], received: [], cabal: data.cabal }
+                this.puppets[data.peerid] = { sock, connected: true, posting: false, posted: [], received: [], cabal: data.cabal, mutes: [], trust: [] }
                 var puppetCount = Object.values(this.puppets).length - 1
                 this.name(data.peerid, NAMES[puppetCount])
                 this.emit("register", data)
@@ -157,6 +158,28 @@ CentralWSS.prototype.state = function (puppetid) {
 CentralWSS.prototype.shutdown = function (puppetid) {
     this._send(puppetid, { type: "shutdown" })
     return this._log("shutdown", puppetid)
+}
+
+CentralWSS.prototype.mute = function (originid, targetid) {
+    let isMuted = this.puppets[originid].mutes.includes(targetid)
+    if (!isMuted) this.puppets[originid].mutes.push(targetid) 
+    return this._log("mute", originid)
+}
+
+CentralWSS.prototype.unmute = function (originid, targetid) {
+    let i = this.puppets[originid].mutes.indexOf(targetid)
+    if (i > -1) this.puppets[originid].mutes.splice(i, 1)
+    return this._log("unmute", originid)
+}
+
+CentralWSS.prototype.trust = function (originid, targetid, amount) {
+    let i = this.puppets[originid].trust.findIndex((t) => t.target === targetid)
+    if (i === -1) { 
+        this.puppets[originid].trust.push({ origin: originid, target: targetid, amount })
+    } else {
+        this.puppets[originid].trust[i].amount = amount 
+    }
+    return this._log("trust", originid)
 }
 
 CentralWSS.prototype._send = function (puppetid, obj) {

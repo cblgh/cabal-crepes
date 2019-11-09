@@ -107,20 +107,29 @@ Vue.component("base-view", {
                                 <option v-for="id in everyoneButMe" :value="id"> {{ puppets[id].nick }}</option>
                             </select>
                             <div class="quarter-spacer"></div>
-                            <button> trust </button>
-                            <select>
+                            <button @click="setTrust()"> trust </button>
+                            <select v-model="trustidSelect">
                                 <option v-for="id in everyoneButMe" :value="id"> {{ puppets[id].nick }}</option>
                             </select>
-                            <select>
-                                <option v-for="val in [0.0, 0.25, 0.50, 0.80, 1.0]" :value="val"> {{ val }}</option>
+                            <select v-model="trustSelect">
+                                <option v-for="val in ['not evaluated', 0.0, 0.25, 0.50, 0.80, 1.0]" :value="val"> {{ val }}</option>
                             </select>
                             <div class="spacer"></div>
-                            <div>
-                                <h4> Mutes </h4>
-                                <div v-if="currentMutes.length === 0"><i> none </i></div> 
-                                <ul v-else>
-                                    <li v-for="mute in currentMutes"> {{ puppetNick(mute) }} by {{ puppetNick(currentPuppet) }} </li>
-                                </ul>
+                            <div class="panels">
+                                <div class="mute-container">
+                                    <h4> Mutes </h4>
+                                    <div v-if="currentMutes.length === 0"><i> none </i></div> 
+                                    <ul v-else>
+                                        <li v-for="mute in currentMutes"> {{ puppetNick(mute) }} via {{ "self" || puppetNick(currentPuppet) }} </li>
+                                    </ul>
+                                </div>
+                                <div class="trust-container">
+                                    <h4> Trust assignments</h4>
+                                    <div v-if="Object.keys(trustedPuppets).length === 0"><i> none </i></div> 
+                                    <ul v-else>
+                                        <li v-for="assignment in trustedPuppets"> {{ puppetNick(assignment.target) }}: {{ assignment.amount }} via {{ puppetNick(assignment.origin) }} </li>
+                                    </ul>
+                                </div>
                             </div>
                         </template>
                     </div>
@@ -147,8 +156,11 @@ Vue.component("base-view", {
         return {
             rawlogs: [],
             mutes: [], // list of { origin: <puppetid>, target: <puppetid> }
+            trust: {}, // trust[origin][target] = amount
             chat: {},
             muteSelect: "",
+            trustSelect: "not evaluated",
+            trustidSelect: "",
             debug: false,
             puppets: {},
             currentPuppet: ""
@@ -166,6 +178,9 @@ Vue.component("base-view", {
             let keys = Object.keys(this.puppets)
             keys.splice(keys.indexOf(this.currentPuppet), 1)
             return keys
+        },
+        trustedPuppets () {
+            return this.trust[this.currentPuppet] || {}
         }
     },
     mounted() {
@@ -192,18 +207,48 @@ Vue.component("base-view", {
             })
         })
     },
+    watch: {
+        currentPuppet (origin) {
+            let target = this.trustidSelect
+            this.fixTrustSelect(origin, target)
+        },
+        trustidSelect (target) {
+            let origin = this.currentPuppet
+            this.fixTrustSelect(origin, target)
+        }
+    },
     methods: {
+        fixTrustSelect(origin, target) {
+            if (origin in this.trust && target in this.trust[origin]) {
+                let amt = this.trust[origin][target].amount
+                this.trustSelect = this.trust[origin][target].amount
+            } else {
+                this.trustSelect = "not evaluated"
+            }
+        },
+        setTrust () {
+            let origin = this.currentPuppet
+            let target = this.trustidSelect
+            let amount = this.trustSelect
+            if (!(origin in this.trust)) this.trust[origin] = {}
+            this.trust[origin][target] = { origin, target, amount }
+            this.POST({ url: `trust/${origin}/${target}/${amount}/`, cb: this.log})
+        },
         isMuted (puppetid) {
             return this.currentMutes.includes(puppetid)
         },
         toggleMute () {
             let isMuted = this.currentMutes.includes(this.muteSelect)
+            let command 
             if (isMuted) {
+                command = "unmute"
                 let i = this.mutes.findIndex((m) => m.origin === this.currentPuppet && m.target === this.muteSelect)
                 this.mutes.splice(i, 1)
             } else {
+                command = "mute"
                 this.mutes.push({ origin: this.currentPuppet, target: this.muteSelect })
             }
+            this.POST({ url: `${command}/${this.currentPuppet ? this.currentPuppet : -1}/${this.muteSelect}/`, cb: this.log})
         },
         toggleConnect () {
             let puppet = this.puppets[this.currentPuppet]
@@ -253,6 +298,13 @@ Vue.component("base-view", {
             Object.keys(data).forEach((puppetid) => {
                 let datum = data[puppetid]
                 this.puppets[puppetid] = { nick: datum.nick, cabal: datum.cabal, peerid: puppetid, connected: datum.connected, posting: datum.posting }
+                // add all the trust state 
+                datum.trust.forEach((t) => {
+                    if (!(t.origin in this.trust)) this.trust[t.origin] = {}
+                    this.trust[t.origin][t.target] = t
+                })
+                // add all mutes to global state
+                this.mutes = this.mutes.concat(datum.mutes.map((m) => { return { origin: puppetid, target: m } }))
                 if (!(puppetid in this.chat)) this.chat[puppetid] = []
                 // add all of the messages the current node has posted itself
                 datum.posted.forEach((msg) => {

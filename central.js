@@ -68,3 +68,21 @@ app.post("/shutdown/:puppet", (req, res) => {
     var msg = central.shutdown(req.params.puppet)
     res.json({ msg }).send()
 })
+
+app.post("/trust/:origin/:target/:amount", (req, res) => {
+    console.log(`trust ${req.params.amount} assigned for puppet #${req.params.target} by ${req.params.origin}`)
+    var msg = central.trust(req.params.origin, req.params.target, req.params.amount)
+    res.json({ msg }).send()
+})
+
+app.post("/mute/:origin/:target", (req, res) => {
+    console.log(`mute issued for puppet #${req.params.target} by ${req.params.origin}`)
+    var msg = central.mute(req.params.origin, req.params.target)
+    res.json({ msg }).send()
+})
+
+app.post("/unmute/:origin/:target", (req, res) => {
+    console.log(`unmute issued for puppet #${req.params.target} by ${req.params.origin}`)
+    var msg = central.unmute(req.params.origin, req.params.target)
+    res.json({ msg }).send()
+})
