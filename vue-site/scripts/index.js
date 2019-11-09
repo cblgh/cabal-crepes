@@ -90,16 +90,33 @@ Vue.component("base-button", {
 Vue.component("base-view", {
     template: `
         <div class="container">
-            <select id="puppet" placeholder="currentPuppet" v-model="currentPuppet">
-                <option v-for="puppet in puppets" :value="puppet.peerid">{{ puppet.nick }}</option>
-            </select>
-            <template v-if="currentPuppet.length > 0">
-                <button @click="toggleConnect()">{{ curr.connected ? "disconnect" : "connect" }}</button>
-                <button @click="togglePosting()">{{ curr.posting ? "stop posting" : "start posting" }}</button>
-                <button @click="sendCommand('shutdown')">shutdown</button>
-            </template>
             <div class="panels">
-                <div id="canvas"></div>
+                <div class="column">
+                    <div id="canvas"></div>
+                    <div class="controls">
+                        <template v-if="currentPuppet.length > 0">
+                            <select id="puppet" placeholder="currentPuppet" v-model="currentPuppet">
+                                <option v-for="puppet in puppets" :value="puppet.peerid">{{ puppet.nick }}</option>
+                            </select>
+                            <button @click="toggleConnect()">{{ curr.connected ? "disconnect" : "connect" }}</button>
+                            <button @click="togglePosting()">{{ curr.posting ? "stop posting" : "start posting" }}</button>
+                            <button @click="shutdown()">shutdown</button>
+                            <div class="spacer"></div>
+                            <button> mute </button>
+                            <select>
+                                <option v-for="id in everyoneButMe" :value="id"> {{ puppets[id].nick }}</option>
+                            </select>
+                            <div class="quarter-spacer"></div>
+                            <button> trust </button>
+                            <select>
+                                <option v-for="id in everyoneButMe" :value="id"> {{ puppets[id].nick }}</option>
+                            </select>
+                            <select>
+                                <option v-for="val in [0.0, 0.25, 0.50, 0.80, 1.0]" :value="val"> {{ val }}</option>
+                            </select>
+                        </template>
+                    </div>
+                </div>
                 <div class="log-panel">
                     <button @click="sendCommand('spawn')">new puppet</button>
                     <button @click="debug = !debug"> {{ debug ? "chat" : "debug" }}</button>
@@ -107,7 +124,7 @@ Vue.component("base-view", {
                         <div v-for="log in rawlogs">{{ log }}</div>
                     </div>
                     <div v-show="!debug" class="chat" :class="{'active-scroller': !debug}">
-                        <h3>{{ puppetNick(currentPuppet) }}:{{ currentPuppet.slice(0, 3) }}</h3>
+                        <h3 v-if="currentPuppet.length > 0">{{ puppetNick(currentPuppet) }}:{{ currentPuppet.slice(0, 3) }}</h3>
                         <div id="chat">
                             <div v-for="msg in chat[currentPuppet]">
                                 {{ formatDate(msg.timestamp) }} <{{ puppetNick(msg.author) }}> {{ msg.message }}
@@ -131,6 +148,11 @@ Vue.component("base-view", {
         curr () {
             if (!(this.currentPuppet in this.puppets)) return {}
             return this.puppets[this.currentPuppet]
+        },
+        everyoneButMe () {
+            let keys = Object.keys(this.puppets)
+            keys.splice(keys.indexOf(this.currentPuppet), 1)
+            return keys
         }
     },
     mounted() {
@@ -171,6 +193,12 @@ Vue.component("base-view", {
             puppet.posting = !puppet.posting
             this.puppets[puppet.peerid] = puppet
             this.sendCommand(command)
+        },
+        shutdown () {
+            nodeGraph.removeNode({ peerid: this.currentPuppet })
+            delete this.puppets[this.currentPuppet]
+            this.currentPuppet = Object.keys(this.puppets)[0]  || ""
+            this.sendCommand("shutdown")
         },
         puppetNick (puppet) {
             return puppet in this.puppets ? this.puppets[puppet].nick : ""
