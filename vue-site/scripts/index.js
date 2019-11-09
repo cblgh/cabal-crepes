@@ -93,10 +93,15 @@ Vue.component("base-view", {
             <select id="puppet" placeholder="currentPuppet" v-model="currentPuppet">
                 <option v-for="puppet in puppets" :value="puppet.peerid">{{ puppet.nick }}</option>
             </select>
-            <button v-for="command in commands" @click="sendCommand(command)">{{ command }}</button>
+            <template v-if="currentPuppet.length > 0">
+                <button @click="toggleConnect()">{{ curr.connected ? "disconnect" : "connect" }}</button>
+                <button @click="togglePosting()">{{ curr.posting ? "stop posting" : "start posting" }}</button>
+                <button @click="sendCommand('shutdown')">shutdown</button>
+            </template>
             <div class="panels">
                 <div id="canvas"></div>
                 <div class="log-panel">
+                    <button @click="sendCommand('spawn')">new puppet</button>
                     <button @click="debug = !debug"> {{ debug ? "chat" : "debug" }}</button>
                     <div v-show="debug" class="debug" :class="{'active-scroller': debug}">
                         <div v-for="log in rawlogs">{{ log }}</div>
@@ -115,12 +120,17 @@ Vue.component("base-view", {
     `,
     data () {
         return {
-            commands: ["state", "start", "stop", "connect", "disconnect", "spawn", "shutdown"],
             rawlogs: [],
             chat: {},
             debug: false,
             puppets: {},
             currentPuppet: ""
+        }
+    },
+    computed: {
+        curr () {
+            if (!(this.currentPuppet in this.puppets)) return {}
+            return this.puppets[this.currentPuppet]
         }
     },
     mounted() {
@@ -148,6 +158,20 @@ Vue.component("base-view", {
         })
     },
     methods: {
+        toggleConnect () {
+            let puppet = this.puppets[this.currentPuppet]
+            let command = puppet.connected ? "disconnect" : "connect"
+            puppet.connected = !puppet.connected
+            this.puppets[puppet.peerid] = puppet
+            this.sendCommand(command)
+        },
+        togglePosting () {
+            let puppet = this.puppets[this.currentPuppet]
+            let command = puppet.posting ? "stop" : "start"
+            puppet.posting = !puppet.posting
+            this.puppets[puppet.peerid] = puppet
+            this.sendCommand(command)
+        },
         puppetNick (puppet) {
             return puppet in this.puppets ? this.puppets[puppet].nick : ""
         },

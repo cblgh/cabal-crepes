@@ -46,7 +46,7 @@ app.post("/disconnect/:puppet", (req, res) => {
 })
 
 app.post("/connect/:puppet", (req, res) => {
-    console.log("disconnect puppet", req.params.puppet)
+    console.log("connect puppet", req.params.puppet)
     var msg = central.connect(req.params.puppet)
     res.json({ msg }).send()
 })
