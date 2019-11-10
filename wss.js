@@ -32,11 +32,9 @@ function CentralWSS (server) {
             if (data.role === "puppet") {
                 this.puppets[data.peerid] = { sock, connected: true, posting: false, posted: [], received: [], cabal: data.cabal, mutes: [], trust: [] }
                 var puppetCount = Object.values(this.puppets).length - 1
-                puppetCount += 20
                 let name = puppetCount > 10
                     ? NAMES[parseInt(puppetCount/10)] + NAMES[puppetCount % 10]
                     : NAMES[puppetCount]
-                console.log(puppetCount, name)
                 this.name(data.peerid, name)
                 this.emit("register", data)
                 console.log("new puppet online")
