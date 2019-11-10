@@ -113,7 +113,7 @@ Vue.component("base-view", {
                                 <option v-for="id in everyoneButMe" :value="id"> {{ puppets[id].nick }}</option>
                             </select>
                             <select v-model="trustSelect">
-                                <option v-for="val in ['not evaluated', 0.0, 0.25, 0.50, 0.80, 1.0]" :value="val"> {{ val }}</option>
+                                <option v-for="val in [0.0, 0.25, 0.50, 0.80, 1.0]" :value="val"> {{ val }}</option>
                             </select>
                             <div class="spacer"></div>
                             <div class="panels">
@@ -125,11 +125,20 @@ Vue.component("base-view", {
                                     </ul>
                                 </div>
                                 <div class="trust-container">
-                                    <h4> Trust assignments</h4>
-                                    <div v-if="Object.keys(trustedPuppets).length === 0"><i> none </i></div> 
-                                    <ul v-else>
-                                        <li v-for="assignment in trustedPuppets"> {{ puppetNick(assignment.target) }}: {{ assignment.amount }} via {{ puppetNick(assignment.origin) }} </li>
-                                    </ul>
+                                    <div>
+                                        <h4> Trust assignments</h4>
+                                        <div v-if="Object.keys(trustedPuppets).length === 0"><i> none </i></div> 
+                                        <ul v-else>
+                                            <li v-for="assignment in trustedPuppets"> {{ puppetNick(assignment.target) }} = {{ assignment.amount }} </li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h4> Most trusted </h4>
+                                        <div v-if="!(currentPuppet in mostTrusted) || mostTrusted[currentPuppet].length === 0"><i> none </i></div> 
+                                        <ul v-else>
+                                            <li v-for="puppet in mostTrusted[currentPuppet]"> {{ puppetNick(puppet) }} </li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
                         </template>
@@ -159,7 +168,8 @@ Vue.component("base-view", {
             trust: {}, // trust[origin][target] = amount
             chat: {},
             muteSelect: "",
-            trustSelect: "not evaluated",
+            mostTrusted: {},
+            trustSelect: 0,
             trustidSelect: "",
             debug: false,
             puppets: {},
@@ -223,7 +233,7 @@ Vue.component("base-view", {
                 let amt = this.trust[origin][target].amount
                 this.trustSelect = this.trust[origin][target].amount
             } else {
-                this.trustSelect = "not evaluated"
+                this.trustSelect = 0
             }
         },
         setTrust () {
@@ -335,6 +345,10 @@ Vue.component("base-view", {
                 this.chat[data.peerid].push({ message: msg.contents, author: msg.peerid, timestamp: +(new Date()) })
             } else if (data.type === "initialize") {
                 this.initializeState(JSON.parse(data.data))
+            } else if (data.type === "trustNet") {
+                console.log(data.data)
+                this.mostTrusted = data.data
+                console.log("trust net is updated!!")
             }
             this.scrollIntoView()
         },

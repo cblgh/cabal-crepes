@@ -1,6 +1,7 @@
 var WebSocket = require("ws")
 var inherits = require("inherits")
 var events = require("events")
+var TrustNet = require("trust-net")
 
 var NAMES = ["zilch", "ein", "zwei", "drei", "shi", "go", "sex", "siete", "hachi", "neuf"]
 
@@ -16,6 +17,7 @@ function CentralWSS (server) {
     /* this.puppets = { sock: ws socket, connected: true, posting: false, posted: []) */
     this.puppets = {}
     this.consumers = []
+    this.trustnets = {}
 
     this.wsevents = {
         "register": (data, sock) => {
@@ -30,6 +32,7 @@ function CentralWSS (server) {
                 sock.send(JSON.stringify({ type: "initialize", data: JSON.stringify(socklessPuppets) }))
             }
             if (data.role === "puppet") {
+                this.trustnets[data.peerid] = TrustNet()
                 this.puppets[data.peerid] = { sock, connected: true, posting: false, posted: [], received: [], cabal: data.cabal, mutes: [], trust: [] }
                 var puppetCount = Object.values(this.puppets).length - 1
                 let name = puppetCount > 10
@@ -182,12 +185,57 @@ CentralWSS.prototype.trust = function (originid, targetid, amount) {
     } else {
         this.puppets[originid].trust[i].amount = amount 
     }
+    /* TODO: only issue a load for the trust net when we have at least four trust assignments. (trust nodes?) */
+    this._updateTrustNet().then(() => {
+        console.log("ok let the consumers know that they should update :))")
+        this._updateConsumers({ type: "trustNet", data: this._getAllMostTrusted() })
+    })
     return this._log("trust", originid)
+}
+
+CentralWSS.prototype._getAllMostTrusted = function () {
+    let mostTrusted = {}
+    for (let puppetid of Object.keys(this.puppets)) {
+        if (this.puppets[puppetid].trust.length > 0) {
+            mostTrusted[puppetid] = this.trustnets[puppetid].getMostTrusted()
+        }
+    }
+    return mostTrusted
 }
 
 CentralWSS.prototype._send = function (puppetid, obj) {
     if (!(puppetid in this.puppets)) return 
     this.puppets[puppetid].sock.send(JSON.stringify(obj))
+}
+
+CentralWSS.prototype._updateConsumers = function (obj) {
+    for (let consumer of this.consumers) {
+        consumer.send(JSON.stringify(obj))
+    }
+}
+
+CentralWSS.prototype._collectTrust = function () {
+    let trustEdges = []
+    for (let puppetid of Object.keys(this.puppets)) {
+        trustEdges = trustEdges.concat(this.puppets[puppetid].trust)
+    }
+    return trustEdges.map((t) => { return { src: t.origin, dst: t.target, weight: t.amount } })
+}
+
+CentralWSS.prototype._updateTrustNet = async function () {
+    return new Promise((res, rej) => {
+        let trustEdges = this._collectTrust()
+        console.log(trustEdges)
+        let promises = []
+        for (let puppetid of Object.keys(this.puppets)) {
+            console.log(puppetid, this.puppets[puppetid].trust.length)
+            if (this.puppets[puppetid].trust.length > 0) {
+                promises.push(this.trustnets[puppetid].load(puppetid, trustEdges))
+            }
+        }
+        console.log(promises)
+        Promise.all(promises).then(() => { res() })
+    })
 }
 
 CentralWSS.prototype.connectAll = function () {

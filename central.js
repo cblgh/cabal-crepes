@@ -86,3 +86,9 @@ app.post("/unmute/:origin/:target", (req, res) => {
     var msg = central.unmute(req.params.origin, req.params.target)
     res.json({ msg }).send()
 })
+
+app.post("/most-trusted/:puppet/", (req, res) => {
+    console.log("get most trusted for", req.params.puppet)
+    var msg = central.mostTrusted(req.params.puppet)
+    res.json({ msg }).send()
+})
