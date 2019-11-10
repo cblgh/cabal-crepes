@@ -94,6 +94,7 @@ Vue.component("base-view", {
                 <div class="column">
                     <div id="canvas"></div>
                     <div class="controls">
+                        <h3 v-if="currentPuppet.length > 0">{{ puppetNick(currentPuppet) }}:{{ currentPuppet.slice(0, 3) }}</h3>
                         <template v-if="currentPuppet.length > 0">
                             <select id="puppet" placeholder="currentPuppet" v-model="currentPuppet">
                                 <option v-for="puppet in puppets" :value="puppet.peerid">{{ puppet.nick }}</option>
@@ -141,7 +142,6 @@ Vue.component("base-view", {
                         <pre v-for="log in rawlogs">{{ log }}</pre>
                     </div>
                     <div v-show="!debug" class="chat" :class="{'active-scroller': !debug}">
-                        <h3 v-if="currentPuppet.length > 0">{{ puppetNick(currentPuppet) }}:{{ currentPuppet.slice(0, 3) }}</h3>
                         <div id="chat">
                             <div v-for="msg in chat[currentPuppet]" :class="{muted: isMuted(msg.author)}">
                                 {{ formatDate(msg.timestamp) }} <{{ puppetNick(msg.author) }}> {{ msg.message }}

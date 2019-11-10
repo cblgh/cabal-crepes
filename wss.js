@@ -2,7 +2,7 @@ var WebSocket = require("ws")
 var inherits = require("inherits")
 var events = require("events")
 
-var NAMES = ["zilch", "ein", "zwei", "drei", "shi", "go", "sex", "siete", "hachi", "neuf", "diez"]
+var NAMES = ["zilch", "ein", "zwei", "drei", "shi", "go", "sex", "siete", "hachi", "neuf"]
 
 function CentralWSS (server) {
     if (!(this instanceof CentralWSS)) return new CentralWSS(server)
@@ -32,7 +32,12 @@ function CentralWSS (server) {
             if (data.role === "puppet") {
                 this.puppets[data.peerid] = { sock, connected: true, posting: false, posted: [], received: [], cabal: data.cabal, mutes: [], trust: [] }
                 var puppetCount = Object.values(this.puppets).length - 1
-                this.name(data.peerid, NAMES[puppetCount])
+                puppetCount += 20
+                let name = puppetCount > 10
+                    ? NAMES[parseInt(puppetCount/10)] + NAMES[puppetCount % 10]
+                    : NAMES[puppetCount]
+                console.log(puppetCount, name)
+                this.name(data.peerid, name)
                 this.emit("register", data)
                 console.log("new puppet online")
             }
