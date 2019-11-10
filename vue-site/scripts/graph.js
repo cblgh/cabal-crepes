@@ -30,8 +30,7 @@ function Graph () {
 }
 
 Graph.prototype.addNode = function (info) {
-    console.log(info)
-    let node = info.name
+    let node = info.nick
     let cabal = info.cabal.substr(0, 3)
 
     if (this.peers.has(node) === false) {
@@ -45,7 +44,7 @@ Graph.prototype.addNode = function (info) {
 }
 
 Graph.prototype.removeNode = function (info) {
-    let node = info.peerid.substr(0, 3) 	
+    let node = info.nick 	
     this.peers.delete(node)
     this.graph.removeNode(node)
     jsnx.draw(this.graph, this.d3opts) 

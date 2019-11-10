@@ -265,7 +265,7 @@ Vue.component("base-view", {
             this.sendCommand(command)
         },
         shutdown () {
-            nodeGraph.removeNode({ peerid: this.currentPuppet })
+            nodeGraph.removeNode({ nick: this.puppets[this.currentPuppet].nick })
             delete this.puppets[this.currentPuppet]
             this.currentPuppet = Object.keys(this.puppets)[0]  || ""
             this.sendCommand("shutdown")
@@ -315,7 +315,7 @@ Vue.component("base-view", {
                     this.chat[puppetid].push({ message: msg.content, author: msg.author, timestamp: msg.time })
                 })
                 // update d3 node graph
-                nodeGraph.addNode({ cabal: datum.cabal, peerid: puppetid, name: datum.nick })
+                nodeGraph.addNode({ cabal: datum.cabal, peerid: puppetid, nick: datum.nick })
             this.chat[puppetid].sort((a, b) => parseInt(a.timestamp) - parseInt(b.timestamp))
             })
         },
@@ -325,7 +325,7 @@ Vue.component("base-view", {
                 this.puppets[data.peerid] = { nick: data.peerid, cabal: data.cabal, peerid: data.peerid, connected: true, posting: false }
             } else if (data.type === "nickChanged") {
                 this.puppets[data.peerid].nick = data.data
-                nodeGraph.addNode({ peerid: data.peerid, cabal: data.cabal, name: data.data})
+                nodeGraph.addNode({ peerid: data.peerid, cabal: data.cabal, nick: data.data})
             } else if (data.type === "messagePosted") {
                 if (!(data.peerid in this.chat)) this.chat[data.peerid] = []
                 this.chat[data.peerid].push({ message: data.data, author: data.peerid, timestamp: +(new Date()) })
