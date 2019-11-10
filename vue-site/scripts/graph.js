@@ -30,7 +30,8 @@ function Graph () {
 }
 
 Graph.prototype.addNode = function (info) {
-    let node = info.peerid.substr(0, 3) 	
+    console.log(info)
+    let node = info.name
     let cabal = info.cabal.substr(0, 3)
 
     if (this.peers.has(node) === false) {

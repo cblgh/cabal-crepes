@@ -315,17 +315,17 @@ Vue.component("base-view", {
                     this.chat[puppetid].push({ message: msg.content, author: msg.author, timestamp: msg.time })
                 })
                 // update d3 node graph
-                nodeGraph.addNode({ cabal: datum.cabal, peerid: puppetid })
+                nodeGraph.addNode({ cabal: datum.cabal, peerid: puppetid, name: datum.nick })
             this.chat[puppetid].sort((a, b) => parseInt(a.timestamp) - parseInt(b.timestamp))
             })
         },
         processMessage (msg) {
             let data = JSON.parse(msg)
             if (data.type === "register") {
-                nodeGraph.addNode(data)
                 this.puppets[data.peerid] = { nick: data.peerid, cabal: data.cabal, peerid: data.peerid, connected: true, posting: false }
             } else if (data.type === "nickChanged") {
                 this.puppets[data.peerid].nick = data.data
+                nodeGraph.addNode({ peerid: data.peerid, cabal: data.cabal, name: data.data})
             } else if (data.type === "messagePosted") {
                 if (!(data.peerid in this.chat)) this.chat[data.peerid] = []
                 this.chat[data.peerid].push({ message: data.data, author: data.peerid, timestamp: +(new Date()) })
