@@ -200,6 +200,7 @@ CentralWSS.prototype._getAllMostTrusted = function () {
             mostTrusted[puppetid] = this.trustnets[puppetid].getMostTrusted()
         }
     }
+    console.log("wss - most trusted:", mostTrusted)
     return mostTrusted
 }
 
