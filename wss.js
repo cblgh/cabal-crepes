@@ -49,6 +49,28 @@ function CentralWSS (server) {
         "peerConnected": (data) => {
             this.emit("peerConnected", data)
         },
+        "trust": (data) => {
+            let c = data.content
+            // set peerid's trust for data.content.target
+            data["data"] = `${c.target.slice(0, 4)} with ${c.weight}`
+            this.emit("trust", data)
+        },
+        "mute": (data) => {
+            let c = data.content
+            data["data"] = `${c.target.slice(0, 4)}`
+            // update peerid's mutelist with regard to data.content.target
+            let isMuted = this.puppets[data.peerid].mutes.includes(c.target)
+            if (!isMuted) this.puppets[data.peerid].mutes.push(c.target) 
+            this.emit("mute", data)
+        },
+        "unmute": (data) => {
+            let c = data.content
+            data["data"] = `${c.target.slice(0, 4)}`
+            // update peerid's mutelist with regard to data.content.target
+            let i = this.puppets[data.peerid].mutes.indexOf(c.target)
+            if (i > -1) this.puppets[data.peerid].mutes.splice(i, 1)
+            this.emit("unmute", data)
+        },
         "peerDisconnected": (data) => {
             this.emit("peerDisconnected", data)
         },
@@ -167,18 +189,17 @@ CentralWSS.prototype.shutdown = function (puppetid) {
 }
 
 CentralWSS.prototype.mute = function (originid, targetid) {
-    let isMuted = this.puppets[originid].mutes.includes(targetid)
-    if (!isMuted) this.puppets[originid].mutes.push(targetid) 
+    this._send(originid, { type: "mute", data: { target: targetid }})
     return this._log("mute", originid)
 }
 
 CentralWSS.prototype.unmute = function (originid, targetid) {
-    let i = this.puppets[originid].mutes.indexOf(targetid)
-    if (i > -1) this.puppets[originid].mutes.splice(i, 1)
+    this._send(originid, { type: "unmute", data: { target: targetid }})
     return this._log("unmute", originid)
 }
 
 CentralWSS.prototype.trust = function (originid, targetid, amount) {
+    this._send(originid, { type: "trust", data: { target: targetid, weight: amount }})
     let i = this.puppets[originid].trust.findIndex((t) => t.target === targetid)
     if (i === -1) { 
         this.puppets[originid].trust.push({ origin: originid, target: targetid, amount })

@@ -47,6 +47,15 @@ function Puppet (cabalkey, server, opts) {
         setNick: (nick) => {
             this.nick(nick)
         },
+        trust: (data) => {
+            this.trust(data)
+        },
+        mute: (data) => {
+            this.mute(data)
+        },
+        unmute: (data) => {
+            this.unmute(data)
+        },
         shutdown: () => {
             console.log("shutting down puppet")
             process.exit()
@@ -162,6 +171,41 @@ Puppet.prototype.startPosting = function () {
     this.postloop = startInterval(() => {
         this.post({ type: "messagePosted", data: "" + new Date().toUTCString() })
     }, this.POST_INTERVAL)
+}
+
+Puppet.prototype.trust = function (data) {
+    let msg = {
+        type: "trust",
+        content: {
+            domain: "mutes",
+            weight: data.weight,
+            target: data.target
+        }
+    }
+    this.headless.post(msg)
+    this.send(msg)
+}
+
+Puppet.prototype.mute = function (data) {
+    let msg = {
+        type: "mute",
+        content: {
+            target: data.target
+        }
+    }
+    this.headless.post(msg)
+    this.send(msg)
+}
+
+Puppet.prototype.unmute = function (data) {
+    let msg = {
+        type: "unmute",
+        content: {
+            target: data.target
+        }
+    }
+    this.headless.post(msg)
+    this.send(msg)
 }
 
 Puppet.prototype.stopPosting = function () {
