@@ -190,7 +190,7 @@ CentralWSS.prototype.trust = function (originid, targetid, amount) {
         console.log("ok let the consumers know that they should update :))")
         this._updateConsumers({ type: "trustNet", data: this._getAllMostTrusted() })
     })
-    return this._log("trust", originid)
+    return "trust update issued by " + originid
 }
 
 CentralWSS.prototype._getAllMostTrusted = function () {
