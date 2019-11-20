@@ -24,6 +24,14 @@ function CentralWSS (server) {
             sock.role = data.role
             if (data.role === "consumer") { 
                 this.consumers.push(sock)
+                // // reset all state on refresh while iterating on scenarios
+                for (let puppetid of Object.keys(this.puppets)) {
+                    this._send(puppetid, { type: "shutdown" })
+                }
+                this.puppets = {}
+                // this.consumers = []
+                this.trustnets = {}
+                /* send all current state to new browser windows */
                 let socklessPuppets = JSON.parse(JSON.stringify(this.puppets))
                 Object.keys(socklessPuppets).forEach((puppetid) => {
                     delete socklessPuppets[puppetid].sock

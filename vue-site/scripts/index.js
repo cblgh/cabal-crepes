@@ -17,6 +17,34 @@ Vue.component("base-component", {
 })
 */
 
+let scenarios = {}
+
+scenarios["one"] = function () {
+    // spawn four puppets
+    this.sendCommand('spawn')
+    this.sendCommand('spawn')
+    this.sendCommand('spawn')
+    this.sendCommand('spawn')
+    let trust = (src, dst) => {
+        this.currentPuppet = src
+        this.trustSelect = 0.8
+        this.trustidSelect = dst
+        this.setTrust()
+    }
+    setTimeout(() => {
+        let zilch = this.idFromName("zilch")
+        let ein = this.idFromName("ein")
+        let zwei = this.idFromName("zwei")
+        console.log("zilch", zilch)
+        console.log("ein", ein)
+        console.log("zwei", zwei)
+        // 0th puppet trusts 1st puppet
+        trust(zilch, ein)
+        // 1st puppet trusts 2nd puppet
+        // trust(ein, zwei)
+    }, 5000)
+}
+
 Vue.component("base-view", {
     template: `
         <div class="container">
@@ -146,6 +174,7 @@ Vue.component("base-view", {
                 node.listener = listener
             })
         })
+        scenarios["one"].bind(this)()
     },
     watch: {
         currentPuppet (origin) {
@@ -173,6 +202,12 @@ Vue.component("base-view", {
             if (!(origin in this.trust)) this.trust[origin] = {}
             this.trust[origin][target] = { origin, target, amount }
             this.POST({ url: `trust/${origin}/${target}/${amount}/`, cb: this.log})
+        },
+        idFromName (name) {
+            for (let e of Object.entries(this.puppets)) {
+                if (e[1].nick === name) return e[0]
+            }
+            return null
         },
         isMuted (puppetid) {
             return this.currentMutes.includes(puppetid)

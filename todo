@@ -1,11 +1,3 @@
-* use object of peerids instead of list of integers
-* send entire state w # puppets etc  on consumer connect
-* design integration for actions from one peer to another
-    * a trust b <x> amount
-    * a netblocks b
-
 // old
-* style site
-
 making crepes easily depoyable
 * create npm module cabal-crepes-default which contains default settings
