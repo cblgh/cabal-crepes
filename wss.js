@@ -28,7 +28,6 @@ function CentralWSS (server) {
                 Object.keys(socklessPuppets).forEach((puppetid) => {
                     delete socklessPuppets[puppetid].sock
                 })
-                console.log(socklessPuppets)
                 sock.send(JSON.stringify({ type: "initialize", data: JSON.stringify(socklessPuppets) }))
             }
             if (data.role === "puppet") {
@@ -51,8 +50,23 @@ function CentralWSS (server) {
         },
         "trust": (data) => {
             let c = data.content
-            // set peerid's trust for data.content.target
             data["data"] = `${c.target.slice(0, 4)} with ${c.weight}`
+            // set peerid's trust for data.content.target
+            let i = this.puppets[data.peerid].trust.findIndex((t) => t.target === c.target)
+            if (i === -1) { 
+                this.puppets[data.peerid].trust.push({ 
+                    origin: data.peerid, 
+                    target: c.target, 
+                    amount: c.weight 
+                })
+            } else {
+                this.puppets[data.peerid].trust[i].amount = c.weight
+            }
+            /* TODO: only issue a load for the trust net when we have at least four trust assignments. (trust nodes?) */
+            this._updateTrustNet().then(() => {
+                console.log("ok let the consumers know that they should update :))")
+                this._updateConsumers({ type: "trustNet", data: this._getAllMostTrusted() })
+            })
             this.emit("trust", data)
         },
         "mute": (data) => {
@@ -200,17 +214,6 @@ CentralWSS.prototype.unmute = function (originid, targetid) {
 
 CentralWSS.prototype.trust = function (originid, targetid, amount) {
     this._send(originid, { type: "trust", data: { target: targetid, weight: amount }})
-    let i = this.puppets[originid].trust.findIndex((t) => t.target === targetid)
-    if (i === -1) { 
-        this.puppets[originid].trust.push({ origin: originid, target: targetid, amount })
-    } else {
-        this.puppets[originid].trust[i].amount = amount 
-    }
-    /* TODO: only issue a load for the trust net when we have at least four trust assignments. (trust nodes?) */
-    this._updateTrustNet().then(() => {
-        console.log("ok let the consumers know that they should update :))")
-        this._updateConsumers({ type: "trustNet", data: this._getAllMostTrusted() })
-    })
     return "trust update issued by " + originid
 }
 
