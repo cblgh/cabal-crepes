@@ -6,6 +6,7 @@ var argv = minimist(process.argv.slice(2))
 var fs = require("fs")
 var configPath = argv.conf || "crepes.conf" 
 var conf = ["", ""]
+var debug = require("debug")("crepes-puppet")
 
 try {
     conf = fs.readFileSync(configPath).toString().split("\n").filter((l) => l.length > 0)
@@ -31,11 +32,11 @@ function Puppet (cabalkey, server, opts) {
 
     this.wsevents = {
         connect: () => {
-            log("connect to swarm")
+            debug("connect to swarm")
             this.headless.connect()
         },
         disconnect: () => {
-            log("disconnect from swarm")
+            debug("disconnect from swarm")
             this.headless.disconnect()
         },
         startPosting: () => {
@@ -57,20 +58,20 @@ function Puppet (cabalkey, server, opts) {
             this.unmute(data)
         },
         shutdown: () => {
-            console.log("shutting down puppet")
+            debug("shutting down puppet")
             process.exit()
         }
     }
 
     this.headless.onPeerConnected((peerId) => {
         this.send({ type: "peerConnected", data: peerId})
-        log(`${peerId} connected`)
-        log(`${this.headless.peers().length} peers connected`)
+        debug(`${peerId} connected`)
+        debug(`${this.headless.peers().length} peers connected`)
     })
 
     this.headless.onPeerDisconnected((peerId) => {
         this.send({ type: "peerDisconnected", data: peerId})
-        log(`${peerId} left`)
+        debug(`${peerId} left`)
     })
 
     this.headless.onMessageReceived((data) => {
@@ -86,7 +87,7 @@ function Puppet (cabalkey, server, opts) {
 Puppet.prototype._retryWebsocket = function () {
     this.setupWebsocket((err) => {
         if (err) { 
-            log(`still no wss connection. retrying in ${this.SERVER_TIMEOUT/1000}s`)
+            debug(`still no wss connection. retrying in ${this.SERVER_TIMEOUT/1000}s`)
             setTimeout(this._retryWebsocket.bind(this), this.SERVER_TIMEOUT) 
             return
         }
@@ -98,8 +99,8 @@ Puppet.prototype._heartbeat = function () {
     clearTimeout(this._timeout)
     this._timeout = setTimeout(() => {
         this.ws.terminate()
-        log("lost connection to websocket server, terminating")
-        // log(`lost connection to websocket server, trying to reestablish`)
+        debug("lost connection to websocket server, terminating")
+        // debug(`lost connection to websocket server, trying to reestablish`)
         // this._retryWebsocket()
     }, this.SERVER_TIMEOUT)
 }
@@ -113,19 +114,19 @@ Puppet.prototype.setupWebsocket = function (cb) {
     })
 
     this.ws.on("open", () => {
-        log("open")
+        debug("open")
         this.ws.ping(this._heartbeat.bind(this))
         cb(null)
     })
 
     this.ws.on("ping", () => {
         this.ws.ping(this._heartbeat.bind(this))
-        log("ping")
+        debug("ping")
     })
 
     this.ws.on("pong", function () {
         clearTimeout(this._timeout)
-        log("pong")
+        debug("pong")
     })
 
     this.ws.on("message", (m) => {
@@ -159,7 +160,7 @@ Puppet.prototype.post = function (msg) {
 }
 
 Puppet.prototype.nick = function (nick) {
-    log("change nick")
+    debug("change nick")
     this.headless.nick(nick)
     this.send({ type: "nickChanged", data: nick })
 }
@@ -209,7 +210,7 @@ Puppet.prototype.unmute = function (data) {
 }
 
 Puppet.prototype.stopPosting = function () {
-    log("stop posting")
+    debug("stop posting")
     if (this.postloop) {
         clearInterval(this.postloop)
     }
@@ -231,18 +232,18 @@ function die (msg) {
     process.exit(1)
 }
 
-function log (msg) {
-    var time = new Date().toISOString().split("T")[1].split(".")[0]
-    process.stdout.write(`[${time}] ${msg}\n`)
-}
+// function log (msg) {
+//     var time = new Date().toISOString().split("T")[1].split(".")[0]
+//     process.stdout.write(`[${time}] ${msg}\n`)
+// }
 
 function setup () {
     var retryTime = argv.retry || 10000
     var puppet = new Puppet(key, addr, { temp: argv.temp })
     puppet.init((err) => {
         if (err) {
-            log(`couldn't connect to ${addr}`)
-            log(`retrying in ${retryTime/1000}s`)
+            debug(`couldn't connect to ${addr}`)
+            debug(`retrying in ${retryTime/1000}s`)
             setTimeout(setup, retryTime)
         }
     })

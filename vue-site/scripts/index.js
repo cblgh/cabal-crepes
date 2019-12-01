@@ -19,29 +19,48 @@ Vue.component("base-component", {
 
 let scenarios = {}
 
+async function wait (ms) {
+    return new Promise((res) => {
+        setTimeout(() => res(), ms)
+    })
+}
+
+/*
+ a trusts [b, c]
+ c trusts d
+ x trusts z
+
+ outcome:
+ we should see from a's POV that we have a, b and c in our trust network
+ */
 scenarios["one"] = function () {
-    // spawn four puppets
-    this.sendCommand('spawn')
-    this.sendCommand('spawn')
-    this.sendCommand('spawn')
-    this.sendCommand('spawn')
+    // spawn 6 puppets
+    this.sendCommand('spawn') // 0
+    this.sendCommand('spawn') // 1
+    this.sendCommand('spawn') // 2
+    this.sendCommand('spawn') // 3
+    this.sendCommand('spawn') // 4
+    this.sendCommand('spawn') // 5
     let trust = (src, dst) => {
         this.currentPuppet = src
         this.trustSelect = 0.8
         this.trustidSelect = dst
         this.setTrust()
     }
-    setTimeout(() => {
-        let zilch = this.idFromName("zilch")
-        let ein = this.idFromName("ein")
-        let zwei = this.idFromName("zwei")
-        console.log("zilch", zilch)
-        console.log("ein", ein)
-        console.log("zwei", zwei)
-        // 0th puppet trusts 1st puppet
+    setTimeout(async () => {
+        let zilch = this.idFromName("zilch")    // a
+        let ein = this.idFromName("ein")        // b
+        let zwei = this.idFromName("zwei")      // c
+        let drei = this.idFromName("drei")      // d
+        let shi = this.idFromName("shi")        // x
+        let go = this.idFromName("go")          // y
         trust(zilch, ein)
-        // 1st puppet trusts 2nd puppet
-        // trust(ein, zwei)
+        await wait(8000)
+        trust(zilch, zwei)
+        await wait(8000)
+        trust(ein, drei)
+        await wait(8000)
+        trust(shi, go)
     }, 5000)
 }
 
@@ -70,33 +89,42 @@ Vue.component("base-view", {
                             <select v-model="trustidSelect">
                                 <option v-for="id in everyoneButMe" :value="id"> {{ puppets[id].nick }}</option>
                             </select>
-                            <select v-model="trustSelect">
-                                <option v-for="val in [0.0, 0.25, 0.50, 0.80, 1.0]" :value="val"> {{ val }}</option>
-                            </select>
-                            <div class="spacer"></div>
-                            <div class="panels">
-                                <div class="mute-container">
-                                    <h4> Mutes </h4>
-                                    <div v-if="currentMutes.length === 0"><i> none </i></div> 
-                                    <ul v-else>
-                                        <li v-for="mute in currentMutes"> {{ puppetNick(mute) }} via {{ "self" || puppetNick(currentPuppet) }} </li>
-                                    </ul>
-                                </div>
-                                <div class="trust-container">
-                                    <div>
-                                        <h4> Trust assignments</h4>
-                                        <div v-if="!(currentPuppet in trust) || Object.keys(trust[currentPuppet]).length === 0"><i> none </i></div> 
-                                        <ul v-else>
-                                            <li v-for="assignment in trust[currentPuppet]"> {{ puppetNick(assignment.target) }} = {{ assignment.amount }} </li>
-                                        </ul>
+                                <select v-model="trustSelect">
+                                    <option v-for="val in [0.0, 0.25, 0.50, 0.80, 1.0]" :value="val"> {{ val }}</option>
+                                </select>
+                                <div class="spacer"></div>
+                                <div class="panels">
+                                    <div class="mute-container">
+                                        <div>
+                                            <h4> Mutes </h4>
+                                            <div v-if="currentMutes.length === 0"><i> none </i></div> 
+                                            <ul v-else>
+                                                <li v-for="mute in currentMutes"> {{ puppetNick(mute) }} via {{ "self" || puppetNick(currentPuppet) }} </li>
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <h4> Rankings </h4>
+                                            <div v-if="!(currentPuppet in rankings)"><i> none </i></div> 
+                                            <ul v-else>
+                                                <li v-for="(rank, puppet) in rankings[currentPuppet]"> {{ puppetNick(puppet) }}: {{ rank }} </li>
+                                            </ul>
+                                        </div>
                                     </div>
-                                    <div>
+                                    <div class="trust-container">
+                                        <div>
+                                            <h4> Trust assignments</h4>
+                                            <div v-if="!(currentPuppet in trust) || Object.keys(trust[currentPuppet]).length === 0"><i> none </i></div> 
+                                            <ul v-else>
+                                                <li v-for="assignment in trust[currentPuppet]"> {{ puppetNick(assignment.target) }} = {{ assignment.amount }} </li>
+                                            </ul>
+                                        </div>
+                                        <div>
                                         <h4> Most trusted </h4>
                                         <div v-if="!(currentPuppet in mostTrusted) || mostTrusted[currentPuppet].length === 0"><i> none </i></div> 
                                         <ul v-else>
                                             <li v-for="puppet in mostTrusted[currentPuppet]"> {{ puppetNick(puppet) }} </li>
                                         </ul>
-                                    </div>
+                                        </div>
                                 </div>
                             </div>
                         </template>
@@ -127,6 +155,7 @@ Vue.component("base-view", {
             chat: {},
             muteSelect: "",
             mostTrusted: {},
+            rankings: {},
             trustSelect: 0,
             trustidSelect: "",
             debug: false,
@@ -312,7 +341,9 @@ Vue.component("base-view", {
                 this.initializeState(JSON.parse(data.data))
             } else if (data.type === "trustNet") {
                 console.log(data.data)
-                this.mostTrusted = data.data
+                this.mostTrusted = data.data.mostTrusted
+                this.rankings = data.data.rankings
+                console.log(JSON.stringify(data.data.rankings))
                 console.log("trust net is updated!!")
             }
             this.scrollIntoView()

@@ -2,6 +2,7 @@ var WebSocket = require("ws")
 var inherits = require("inherits")
 var events = require("events")
 var TrustNet = require("trust-net")
+var debug = require("debug")("crepes")
 
 var NAMES = ["zilch", "ein", "zwei", "drei", "shi", "go", "sex", "siete", "hachi", "neuf"]
 
@@ -47,7 +48,7 @@ function CentralWSS (server) {
                     : NAMES[puppetCount]
                 this.name(data.peerid, name)
                 this.emit("register", data)
-                console.log("new puppet online")
+                debug("new puppet online")
             }
         },
         "deregister": (data) => {
@@ -72,8 +73,9 @@ function CentralWSS (server) {
             }
             /* TODO: only issue a load for the trust net when we have at least four trust assignments. (trust nodes?) */
             this._updateTrustNet().then(() => {
-                console.log("ok let the consumers know that they should update :))")
-                this._updateConsumers({ type: "trustNet", data: this._getAllMostTrusted() })
+                debug("let the consumers know that they should update")
+                let data = { mostTrusted: this._getAllMostTrusted(), rankings: this._getRankings() }
+                this._updateConsumers({ type: "trustNet", data })
             })
             this.emit("trust", data)
         },
@@ -117,7 +119,7 @@ function CentralWSS (server) {
     var heartbeat = setInterval(() => {
         this.sockets.forEach((sock) => {
             if (!sock.alive) {
-                console.log("sock died, type of", sock.role)
+                debug("sock died, type of", sock.role)
                 if (sock.role === "puppet") { 
                     Object.keys(this.puppets).forEach((puppetid) => { 
                         if (this.puppets[puppetid].sock === sock) {
@@ -140,11 +142,11 @@ function CentralWSS (server) {
     }, 5000)
 
     this.wss.on("listening", () => {
-        console.log("wss started")
+        debug("wss started")
     })
 
     this.wss.on("connection", (ws) => {
-        console.log("incoming connection")
+        debug("incoming connection")
         /* refactor into this.heartMonitor function */
         ws.alive = true
         this.sockets.push(ws)
@@ -232,8 +234,19 @@ CentralWSS.prototype._getAllMostTrusted = function () {
             mostTrusted[puppetid] = this.trustnets[puppetid].getMostTrusted()
         }
     }
-    console.log("wss - most trusted:", mostTrusted)
+    debug("wss - most trusted:", mostTrusted)
     return mostTrusted
+}
+
+CentralWSS.prototype._getRankings = function () {
+    let rankings = {}
+    for (let puppetid of Object.keys(this.puppets)) {
+        if (this.puppets[puppetid].trust.length > 0) {
+            rankings[puppetid] = this.trustnets[puppetid].getRankings()
+        }
+    }
+    debug("wss - rankings:", rankings)
+    return rankings
 }
 
 CentralWSS.prototype._send = function (puppetid, obj) {
@@ -258,15 +271,17 @@ CentralWSS.prototype._collectTrust = function () {
 CentralWSS.prototype._updateTrustNet = async function () {
     return new Promise((res, rej) => {
         let trustEdges = this._collectTrust()
-        console.log(trustEdges)
+        debug(trustEdges)
         let promises = []
-        for (let puppetid of Object.keys(this.puppets)) {
-            console.log(puppetid, this.puppets[puppetid].trust.length)
-            if (this.puppets[puppetid].trust.length > 0) {
-                promises.push(this.trustnets[puppetid].load(puppetid, trustEdges))
-            }
-        }
-        console.log(promises)
+        let zilch = Object.entries(this.puppets).filter((p) => p[1].nick === "zilch")[0][0]
+        promises.push(this.trustnets[zilch].load(zilch, trustEdges))
+        // for (let puppetid of Object.keys(this.puppets)) {
+        //     debug(puppetid, this.puppets[puppetid].trust.length)
+        //     if (this.puppets[puppetid].trust.length > 0) {
+        //         promises.push(this.trustnets[puppetid].load(puppetid, trustEdges))
+        //     }
+        // }
+        debug(promises)
         Promise.all(promises).then(() => { res() })
     })
 }

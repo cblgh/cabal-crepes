@@ -23,6 +23,7 @@ Logger.prototype.log = function (data) {
     switch (this.method) {
         case "file":
             this.save(data)
+            break
         case "stdout": 
         default: 
             this.print(data)

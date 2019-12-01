@@ -25,7 +25,7 @@
   },
   "scripts": {
     "test": "standard --fix",
-    "start": "node central.js",
+    "start": "DEBUG=appleseed,trustnet node central.js",
     "puppet": "node puppet.js --addr http://localhost:8877"
   },
   "repository": {
