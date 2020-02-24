@@ -169,7 +169,12 @@ Vue.component("base-view", {
             return this.puppets[this.currentPuppet]
         },
         currentMutes () {
-            return this.mutes.filter((m) => m.origin === this.currentPuppet).map((m) => m.target)
+            let trustList = [this.currentPuppet]
+            if (!this.currentPuppet) return []
+            if (this.mostTrusted[this.currentPuppet]) {
+                trustList = trustList.concat(this.mostTrusted[this.currentPuppet])
+            }
+            return this.mutes.filter((m) => trustList.includes(m.origin)).map((m) => m.target)
         },
         everyoneButMe () {
             let keys = Object.keys(this.puppets)
