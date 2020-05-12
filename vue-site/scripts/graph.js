@@ -1,13 +1,16 @@
+const purple = "#8D52F4"
+const teal = "#30D6C5"
+const red = "#FF898C"
+
 function Graph () {
     if (!(this instanceof Graph)) return new Graph()
     this.peers = new Set()
     this.graph = new jsnx.Graph()
-    var color = d3.scale.category20()
     this.d3opts = {
         element: "#canvas",
         withLabels: true, 
         height: 300,
-        width:600,
+        width: 600,
         layoutAttr: {
             charge: -120,
             linkDistance: 80
@@ -18,15 +21,24 @@ function Graph () {
         },
         nodeStyle: {
             fill: function(d) { 
-                return color(d.data.group) 
+                if (typeof d.data.group === "undefined") return red
+                return purple
             },
             stroke: "none"
         },
-        labelStyle: {fill: "white"},
-        edgeStyle: {
-            fill: "#999"
-        }
+        labelStyle: { fill: "white" },
+        edgeStyle: { fill: teal }
     }
+}
+
+Graph.prototype.setEdge = function (src, dst) {
+    this.graph.addEdge(src, dst)
+    jsnx.draw(this.graph, this.d3opts) 
+}
+
+Graph.prototype.removeEdge = function (src, dst) {
+    this.graph.removeEdge(src, dst)
+    jsnx.draw(this.graph, this.d3opts) 
 }
 
 Graph.prototype.addNode = function (info) {
@@ -36,9 +48,9 @@ Graph.prototype.addNode = function (info) {
     if (this.peers.has(node) === false) {
         this.peers.add(node)
         this.graph.addNode(node, { group: 0, peerid: info.peerid, cabal: info.cabal })
-        this.peers.forEach((i) => {
-            this.graph.addEdgesFrom([[cabal, i], [i, cabal]])
-        })
+        // this.peers.forEach((i) => {
+        //     this.graph.addEdgesFrom([[cabal, i], [i, cabal]])
+        // })
     }
     jsnx.draw(this.graph, this.d3opts) 
 }

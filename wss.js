@@ -268,6 +268,7 @@ CentralWSS.prototype._collectTrust = function () {
     return trustEdges.map((t) => { return { src: t.origin, dst: t.target, weight: t.amount } })
 }
 
+/* remove dependence on zilch */
 CentralWSS.prototype._updateTrustNet = async function () {
     return new Promise((res, rej) => {
         let trustEdges = this._collectTrust()

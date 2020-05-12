@@ -47,21 +47,21 @@ scenarios["one"] = function () {
         this.trustidSelect = dst
         this.setTrust()
     }
-    setTimeout(async () => {
-        let zilch = this.idFromName("zilch")    // a
-        let ein = this.idFromName("ein")        // b
-        let zwei = this.idFromName("zwei")      // c
-        let drei = this.idFromName("drei")      // d
-        let shi = this.idFromName("shi")        // x
-        let go = this.idFromName("go")          // y
-        trust(zilch, ein)
-        await wait(8000)
-        trust(zilch, zwei)
-        await wait(8000)
-        trust(ein, drei)
-        await wait(8000)
-        trust(shi, go)
-    }, 5000)
+    // setTimeout(async () => {
+    //     let zilch = this.idFromName("zilch")    // a
+    //     let ein = this.idFromName("ein")        // b
+    //     let zwei = this.idFromName("zwei")      // c
+    //     let drei = this.idFromName("drei")      // d
+    //     let shi = this.idFromName("shi")        // x
+    //     let go = this.idFromName("go")          // y
+    //     trust(zilch, ein)
+    //     await wait(8000)
+    //     trust(zilch, zwei)
+    //     await wait(8000)
+    //     trust(ein, drei)
+    //     await wait(8000)
+    //     trust(shi, go)
+    // }, 5000)
 }
 
 Vue.component("base-view", {
@@ -149,6 +149,7 @@ Vue.component("base-view", {
     `,
     data () {
         return {
+            listeners: {},
             rawlogs: [],
             mutes: [], // list of { origin: <puppetid>, target: <puppetid> }
             trust: {}, // trust[origin][target] = amount
@@ -196,17 +197,7 @@ Vue.component("base-view", {
         socket.addEventListener("message", (evt) => {
             this.log(evt.data)
             this.processMessage(evt.data)
-
-            // add click events to all d3 puppet nodes
-            document.querySelectorAll("g.node").forEach((node) => {
-                if (node.listener) return 
-                let listener = (e) => {
-                    let d3data = d3.select(node).datum().data
-                    if (d3data.peerid && d3data.peerid in this.puppets) this.currentPuppet = d3data.peerid
-                }
-                node.addEventListener("click", listener)
-                node.listener = listener
-            })
+            this.refreshGraphListeners()
         })
         scenarios["one"].bind(this)()
     },
@@ -221,6 +212,24 @@ Vue.component("base-view", {
         }
     },
     methods: {
+        refreshGraphListeners () {
+            function removeListener ({ node, listener, type }) { 
+                node.removeEventListener(type, listener) 
+            }
+            // add click events to all d3 puppet nodes
+            document.querySelectorAll("g.node").forEach((node) => {
+                const d3data = d3.select(node).datum().data
+                const listener = (e) => {
+                    if (d3data.peerid && d3data.peerid in this.puppets) this.currentPuppet = d3data.peerid
+                }
+                if (this.listeners[d3data.peerid]) {
+                    removeListener(this.listeners[d3data.peerid])
+                }
+                node.addEventListener("click", listener)
+                node.listener = listener
+                this.listeners[d3data.peerid] = { node, listener, type: "click" }
+            })
+        },
         fixTrustSelect(origin, target) {
             if (origin in this.trust && target in this.trust[origin]) {
                 let amt = this.trust[origin][target].amount
@@ -234,8 +243,14 @@ Vue.component("base-view", {
             let target = this.trustidSelect
             let amount = this.trustSelect
             if (!(origin in this.trust)) this.trust[origin] = {}
+            if (parseFloat(amount) === 0) {
+                nodeGraph.removeEdge(this.puppetNick(origin), this.puppetNick(target))
+            } else {
+                nodeGraph.setEdge(this.puppetNick(origin), this.puppetNick(target))
+            }
             this.trust[origin][target] = { origin, target, amount }
             this.POST({ url: `trust/${origin}/${target}/${amount}/`, cb: this.log})
+            setTimeout(() => { this.refreshGraphListeners() }, 800)
         },
         idFromName (name) {
             for (let e of Object.entries(this.puppets)) {
@@ -243,6 +258,7 @@ Vue.component("base-view", {
             }
             return null
         },
+
         isMuted (puppetid) {
             return this.currentMutes.includes(puppetid)
         },
@@ -334,6 +350,7 @@ Vue.component("base-view", {
                 this.puppets[data.peerid] = { nick: data.peerid, cabal: data.cabal, peerid: data.peerid, connected: true, posting: false }
             } else if (data.type === "nickChanged") {
                 this.puppets[data.peerid].nick = data.data
+                // node is counted as initialized when its nick has been set properly
                 nodeGraph.addNode({ peerid: data.peerid, cabal: data.cabal, nick: data.data})
             } else if (data.type === "messagePosted") {
                 if (!(data.peerid in this.chat)) this.chat[data.peerid] = []
