@@ -10,6 +10,7 @@ function Graph () {
     this.d3opts = {
         element: "#canvas",
         withLabels: true, 
+        withEdgeLabels: true,
         height: 300,
         width: 600,
         layoutAttr: {
@@ -27,7 +28,11 @@ function Graph () {
             },
             stroke: "none"
         },
+        edgeLabels: function (d) {
+            return d.data.weight
+        },
         labelStyle: { fill: "white" },
+        edgeLabelStyle: { fill: purple },
         edgeStyle: { 
             fill: function (d) {
                 // if edge in reverse direction exists, we have a bidirectional edge
@@ -39,8 +44,8 @@ function Graph () {
     }
 }
 
-Graph.prototype.setEdge = function (src, dst) {
-    this.graph.addEdge(src, dst)
+Graph.prototype.setEdge = function (src, dst, weight) {
+    this.graph.addEdge(src, dst, { weight })
     jsnx.draw(this.graph, this.d3opts) 
 }
 

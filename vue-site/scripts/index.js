@@ -246,7 +246,7 @@ Vue.component("base-view", {
             if (parseFloat(amount) === 0) {
                 nodeGraph.removeEdge(this.puppetNick(origin), this.puppetNick(target))
             } else {
-                nodeGraph.setEdge(this.puppetNick(origin), this.puppetNick(target))
+                nodeGraph.setEdge(this.puppetNick(origin), this.puppetNick(target), amount)
             }
             this.trust[origin][target] = { origin, target, amount }
             this.POST({ url: `trust/${origin}/${target}/${amount}/`, cb: this.log})
