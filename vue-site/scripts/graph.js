@@ -2,7 +2,10 @@ const purple = "#8D52F4"
 const teal = "#30D6C5"
 const red = "#FF898C"
 const gold = "#FBDC93"
-
+/* jsnetworkx docs:
+ * https://github.com/fkling/JSNetworkX/wiki/Drawing-graphs
+ * http://jsnetworkx.org/api/#/v/v0.3.4/DiGraph
+*/
 function Graph () {
     if (!(this instanceof Graph)) return new Graph()
     this.peers = new Set()
@@ -10,12 +13,13 @@ function Graph () {
     this.d3opts = {
         element: "#canvas",
         withLabels: true, 
-        withEdgeLabels: true,
+        edgeOffset: 20,
+        // withEdgeLabels: true, /* uncomment me to add edge labels with weights */
         height: 300,
         width: 600,
         layoutAttr: {
-            charge: -120,
-            linkDistance: 80
+            charge: -200,
+            linkDistance: 120
         },
         nodeAttr: {
             r: 20,
@@ -34,6 +38,11 @@ function Graph () {
         labelStyle: { fill: "white" },
         edgeLabelStyle: { fill: purple },
         edgeStyle: { 
+            "stroke-width": function (d) {
+                const base = 6
+                if (d.G.hasEdge(d.edge[1], d.edge[0])) return base - 3
+                return base
+            },
             fill: function (d) {
                 // if edge in reverse direction exists, we have a bidirectional edge
                 // colour it differently, to make it stand out
