@@ -1,11 +1,12 @@
 const purple = "#8D52F4"
 const teal = "#30D6C5"
 const red = "#FF898C"
+const gold = "#FBDC93"
 
 function Graph () {
     if (!(this instanceof Graph)) return new Graph()
     this.peers = new Set()
-    this.graph = new jsnx.Graph()
+    this.graph = new jsnx.DiGraph()
     this.d3opts = {
         element: "#canvas",
         withLabels: true, 
@@ -27,7 +28,14 @@ function Graph () {
             stroke: "none"
         },
         labelStyle: { fill: "white" },
-        edgeStyle: { fill: teal }
+        edgeStyle: { 
+            fill: function (d) {
+                // if edge in reverse direction exists, we have a bidirectional edge
+                // colour it differently, to make it stand out
+                if (d.G.hasEdge(d.edge[1], d.edge[0])) return gold
+                return teal 
+            }
+        }
     }
 }
 
