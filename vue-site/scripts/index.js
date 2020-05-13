@@ -42,7 +42,7 @@ scenarios["one"] = function () {
     this.sendCommand('spawn') // 4
     this.sendCommand('spawn') // 5
     let trust = (src, dst) => {
-        this.currentPuppet = src
+        this.currentPuppetId = src
         this.trustSelect = 0.8
         this.trustidSelect = dst
         this.setTrust()
@@ -70,12 +70,12 @@ Vue.component("base-view", {
             <div class="panels">
                 <div class="column">
                     <div id="canvas"></div>
+					<div class="tab-row">
+						<div @click="currentPuppetId = puppet.peerid" class="tab" v-for="puppet in puppets" :class="{ 'active-tab': puppet.peerid === currentPuppetId}" :value="puppet.peerid">{{ puppet.nick }}</div>
+					</div>
                     <div class="controls">
-                        <h3 v-if="currentPuppet.length > 0">{{ puppetNick(currentPuppet) }}:{{ currentPuppet.slice(0, 3) }}</h3>
-                        <template v-if="currentPuppet.length > 0">
-                            <select id="puppet" placeholder="currentPuppet" v-model="currentPuppet">
-                                <option v-for="puppet in puppets" :value="puppet.peerid">{{ puppet.nick }}</option>
-                            </select>
+                        <h3 v-if="currentPuppetId.length > 0">{{ puppetNick(currentPuppetId) }}:{{ currentPuppetId.slice(0, 3) }}</h3>
+                        <template v-if="currentPuppetId.length > 0">
                             <button @click="toggleConnect()">{{ curr.connected ? "disconnect" : "connect" }}</button>
                             <button @click="togglePosting()">{{ curr.posting ? "stop posting" : "start posting" }}</button>
                             <button @click="shutdown()">shutdown</button>
@@ -99,30 +99,30 @@ Vue.component("base-view", {
                                             <h4> Mutes </h4>
                                             <div v-if="currentMutes.length === 0"><i> none </i></div> 
                                             <ul v-else>
-                                                <li v-for="mute in currentMutes"> {{ puppetNick(mute) }} via {{ "self" || puppetNick(currentPuppet) }} </li>
+                                                <li v-for="mute in currentMutes"> {{ puppetNick(mute) }} via {{ "self" || puppetNick(currentPuppetId) }} </li>
                                             </ul>
                                         </div>
                                         <div>
                                             <h4> Rankings </h4>
-                                            <div v-if="!(currentPuppet in rankings)"><i> none </i></div> 
+                                            <div v-if="!(currentPuppetId in rankings)"><i> none </i></div> 
                                             <ul v-else>
-                                                <li v-for="(rank, puppet) in rankings[currentPuppet]"> {{ puppetNick(puppet) }}: {{ rank }} </li>
+                                                <li v-for="(rank, puppet) in rankings[currentPuppetId]"> {{ puppetNick(puppet) }}: {{ rank }} </li>
                                             </ul>
                                         </div>
                                     </div>
                                     <div class="trust-container">
                                         <div>
                                             <h4> Trust assignments</h4>
-                                            <div v-if="!(currentPuppet in trust) || Object.keys(trust[currentPuppet]).length === 0"><i> none </i></div> 
+                                            <div v-if="!(currentPuppetId in trust) || Object.keys(trust[currentPuppetId]).length === 0"><i> none </i></div> 
                                             <ul v-else>
-                                                <li v-for="assignment in trust[currentPuppet]"> {{ puppetNick(assignment.target) }} = {{ assignment.amount }} </li>
+                                                <li v-for="assignment in trust[currentPuppetId]"> {{ puppetNick(assignment.target) }} = {{ assignment.amount }} </li>
                                             </ul>
                                         </div>
                                         <div>
                                         <h4> Most trusted </h4>
-                                        <div v-if="!(currentPuppet in mostTrusted) || mostTrusted[currentPuppet].length === 0"><i> none </i></div> 
+                                        <div v-if="!(currentPuppetId in mostTrusted) || mostTrusted[currentPuppetId].length === 0"><i> none </i></div> 
                                         <ul v-else>
-                                            <li v-for="puppet in mostTrusted[currentPuppet]"> {{ puppetNick(puppet) }} </li>
+                                            <li v-for="puppet in mostTrusted[currentPuppetId]"> {{ puppetNick(puppet) }} </li>
                                         </ul>
                                         </div>
                                 </div>
@@ -138,7 +138,7 @@ Vue.component("base-view", {
                     </div>
                     <div v-show="!debug" class="chat" :class="{'active-scroller': !debug}">
                         <div id="chat">
-                            <div v-for="msg in chat[currentPuppet]" :class="{muted: isMuted(msg.author)}">
+                            <div v-for="msg in chat[currentPuppetId]" :class="{muted: isMuted(msg.author)}">
                                 {{ formatDate(msg.timestamp) }} <{{ puppetNick(msg.author) }}> {{ msg.message }}
                             </div>
                         </div>
@@ -161,29 +161,29 @@ Vue.component("base-view", {
             trustidSelect: "",
             debug: false,
             puppets: {},
-            currentPuppet: ""
+            currentPuppetId: ""
         }
     },
     computed: {
         curr () {
-            if (!(this.currentPuppet in this.puppets)) return {}
-            return this.puppets[this.currentPuppet]
+            if (!(this.currentPuppetId in this.puppets)) return {}
+            return this.puppets[this.currentPuppetId]
         },
         currentMutes () {
-            let trustList = [this.currentPuppet]
-            if (!this.currentPuppet) return []
-            if (this.mostTrusted[this.currentPuppet]) {
-                trustList = trustList.concat(this.mostTrusted[this.currentPuppet])
+            let trustList = [this.currentPuppetId]
+            if (!this.currentPuppetId) return []
+            if (this.mostTrusted[this.currentPuppetId]) {
+                trustList = trustList.concat(this.mostTrusted[this.currentPuppetId])
             }
             return this.mutes.filter((m) => trustList.includes(m.origin)).map((m) => m.target)
         },
         everyoneButMe () {
             let keys = Object.keys(this.puppets)
-            keys.splice(keys.indexOf(this.currentPuppet), 1)
+            keys.splice(keys.indexOf(this.currentPuppetId), 1)
             return keys
         },
         trustedPuppets () {
-            return this.trust[this.currentPuppet] || {}
+            return this.trust[this.currentPuppetId] || {}
         }
     },
     mounted() {
@@ -202,12 +202,12 @@ Vue.component("base-view", {
         scenarios["one"].bind(this)()
     },
     watch: {
-        currentPuppet (origin) {
+        currentPuppetId (origin) {
             let target = this.trustidSelect
             this.fixTrustSelect(origin, target)
         },
         trustidSelect (target) {
-            let origin = this.currentPuppet
+            let origin = this.currentPuppetId
             this.fixTrustSelect(origin, target)
         }
     },
@@ -220,7 +220,7 @@ Vue.component("base-view", {
             document.querySelectorAll("g.node").forEach((node) => {
                 const d3data = d3.select(node).datum().data
                 const listener = (e) => {
-                    if (d3data.peerid && d3data.peerid in this.puppets) this.currentPuppet = d3data.peerid
+                    if (d3data.peerid && d3data.peerid in this.puppets) this.currentPuppetId = d3data.peerid
                 }
                 if (this.listeners[d3data.peerid]) {
                     removeListener(this.listeners[d3data.peerid])
@@ -239,7 +239,7 @@ Vue.component("base-view", {
             }
         },
         setTrust () {
-            let origin = this.currentPuppet
+            let origin = this.currentPuppetId
             let target = this.trustidSelect
             let amount = this.trustSelect
             if (!(origin in this.trust)) this.trust[origin] = {}
@@ -267,39 +267,39 @@ Vue.component("base-view", {
             let command 
             if (isMuted) {
                 command = "unmute"
-                let i = this.mutes.findIndex((m) => m.origin === this.currentPuppet && m.target === this.muteSelect)
+                let i = this.mutes.findIndex((m) => m.origin === this.currentPuppetId && m.target === this.muteSelect)
                 this.mutes.splice(i, 1)
             } else {
                 command = "mute"
-                this.mutes.push({ origin: this.currentPuppet, target: this.muteSelect })
+                this.mutes.push({ origin: this.currentPuppetId, target: this.muteSelect })
             }
-            this.POST({ url: `${command}/${this.currentPuppet ? this.currentPuppet : -1}/${this.muteSelect}/`, cb: this.log})
+            this.POST({ url: `${command}/${this.currentPuppetId ? this.currentPuppetId : -1}/${this.muteSelect}/`, cb: this.log})
         },
         toggleConnect () {
-            let puppet = this.puppets[this.currentPuppet]
+            let puppet = this.puppets[this.currentPuppetId]
             let command = puppet.connected ? "disconnect" : "connect"
             puppet.connected = !puppet.connected
             this.puppets[puppet.peerid] = puppet
             this.sendCommand(command)
         },
         togglePosting () {
-            let puppet = this.puppets[this.currentPuppet]
+            let puppet = this.puppets[this.currentPuppetId]
             let command = puppet.posting ? "stop" : "start"
             puppet.posting = !puppet.posting
             this.puppets[puppet.peerid] = puppet
             this.sendCommand(command)
         },
         shutdown () {
-            nodeGraph.removeNode({ nick: this.puppets[this.currentPuppet].nick })
-            delete this.puppets[this.currentPuppet]
-            this.currentPuppet = Object.keys(this.puppets)[0]  || ""
+            nodeGraph.removeNode({ nick: this.puppets[this.currentPuppetId].nick })
+            delete this.puppets[this.currentPuppetId]
+            this.currentPuppetId = Object.keys(this.puppets)[0]  || ""
             this.sendCommand("shutdown")
         },
         puppetNick (puppet) {
             return puppet in this.puppets ? this.puppets[puppet].nick : ""
         },
         sendCommand (command) {
-            this.POST({ url: `${command}/${this.currentPuppet ? this.currentPuppet : -1}`, cb: this.log})
+            this.POST({ url: `${command}/${this.currentPuppetId ? this.currentPuppetId : -1}`, cb: this.log})
         },
         scrollIntoView () {
             var hovering = document.querySelector('.active-scroller:hover')
