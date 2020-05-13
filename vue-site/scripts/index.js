@@ -83,16 +83,16 @@ Vue.component("base-view", {
                                 <button @click="shutdown()">shutdown</button>
                                 <div class="spacer"></div>
                                 <div class="puppet-container">
-                                    <div class="puppet-row" v-for="puppet in puppets" v-if="puppet.peerid !== currentPuppetId">
+                                    <div class="puppet-row" v-for="puppet in puppets" :key="puppet.peerid" v-if="puppet.peerid !== currentPuppetId">
                                         <span> {{ puppet.nick }} </span>
                                         <div class="radio-container">
-                                            <input :id="'yes-' + puppet.peerid" type='radio' name="trust"/>
+                                            <input :id="'yes-' + puppet.peerid" type='radio' value="trust" :name="'trust- '+ puppet.peerid"/>
                                             <label :for="'yes-' + puppet.peerid">trust</label>
-                                            <input :id="'no-' + puppet.peerid" type='radio' name="distrust"/>
+                                            <input :id="'no-' + puppet.peerid" type='radio' value="distrust" :name="'trust- '+ puppet.peerid"/>
                                             <label :for="'no-' + puppet.peerid">distrust</label>
                                         </div>
-                                        <select v-model="trustSelect">
-                                            <option v-for="val in [0.0, 0.25, 0.50, 0.80, 1.0]" :value="val"> {{ val }}</option>
+                                        <select @change="updateTrust" :data-puppetid="puppet.peerid">
+                                            <option v-for="val in [0.0, 0.25, 0.50, 0.80, 1.0]" :selected="determineTrustValue(puppet.peerid, val)" :value="val"> {{ val }}</option>
                                         </select>
                                         <!-- <select v&#45;model="trustidSelect"> -->
                                         <!--     <option v&#45;for="id in everyoneButMe" :value="id"> {{ puppets[id].nick }}</option> -->
@@ -223,6 +223,17 @@ Vue.component("base-view", {
         }
     },
     methods: {
+        determineTrustValue(puppetid, value) {
+            if (!this.trust[this.currentPuppetId]) return false
+            const trustObj = this.trust[this.currentPuppetId][puppetid]
+            if (typeof trustObj === "undefined") return false
+            return parseFloat(trustObj.amount) === parseFloat(value)
+        },
+        updateTrust (e) {
+            const target = e.target.dataset.puppetid
+            const amount = e.target.value
+            this.setTrust(target, amount)
+        },
         refreshGraphListeners () {
             function removeListener ({ node, listener, type }) { 
                 node.removeEventListener(type, listener) 
@@ -249,10 +260,8 @@ Vue.component("base-view", {
                 this.trustSelect = 0
             }
         },
-        setTrust () {
+        setTrust (target, amount) {
             let origin = this.currentPuppetId
-            let target = this.trustidSelect
-            let amount = this.trustSelect
             if (!(origin in this.trust)) this.trust[origin] = {}
             if (parseFloat(amount) === 0) {
                 nodeGraph.removeEdge(this.puppetNick(origin), this.puppetNick(target))
