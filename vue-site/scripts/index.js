@@ -66,34 +66,43 @@ scenarios["one"] = function () {
 
 Vue.component("base-view", {
     template: `
-        <div class="container">
-            <div class="panels">
-                <div class="column">
-                    <div id="canvas"></div>
-					<div class="tab-row">
-						<div @click="currentPuppetId = puppet.peerid" class="tab" v-for="puppet in puppets" :class="{ 'active-tab': puppet.peerid === currentPuppetId}" :value="puppet.peerid">{{ puppet.nick }}</div>
-					</div>
-                    <div class="controls">
-                        <h3 v-if="currentPuppetId.length > 0">{{ puppetNick(currentPuppetId) }}:{{ currentPuppetId.slice(0, 3) }}</h3>
-                        <template v-if="currentPuppetId.length > 0">
-                            <button @click="toggleConnect()">{{ curr.connected ? "disconnect" : "connect" }}</button>
-                            <button @click="togglePosting()">{{ curr.posting ? "stop posting" : "start posting" }}</button>
-                            <button @click="shutdown()">shutdown</button>
-                            <div class="spacer"></div>
-                            <button @click="toggleMute()"> {{ currentMutes.includes(muteSelect) ? "unmute" : "mute" }} </button>
-                            <select v-model="muteSelect">
-                                <option v-for="id in everyoneButMe" :value="id"> {{ puppets[id].nick }}</option>
-                            </select>
-                            <div class="quarter-spacer"></div>
-                            <button @click="setTrust()"> trust </button>
-                            <select v-model="trustidSelect">
-                                <option v-for="id in everyoneButMe" :value="id"> {{ puppets[id].nick }}</option>
-                            </select>
-                                <select v-model="trustSelect">
-                                    <option v-for="val in [0.0, 0.25, 0.50, 0.80, 1.0]" :value="val"> {{ val }}</option>
-                                </select>
+    <div class="container">
+        <div class="panels">
+            <div class="column">
+                <div id="canvas"></div>
+                <div class="tab-row">
+                    <div @click="currentPuppetId = puppet.peerid" class="tab" v-for="puppet in puppets" :class="{ 'active-tab': puppet.peerid === currentPuppetId}" :value="puppet.peerid">{{ puppet.nick }}</div>
+                </div>
+                <div class="controls">
+                    <h3 v-if="currentPuppetId.length > 0">{{ puppetNick(currentPuppetId) }}:{{ currentPuppetId.slice(0, 3) }}</h3>
+                    <template v-if="currentPuppetId.length > 0">
+                        <div class="panels">
+                            <div class="action-container">
+                                <button @click="toggleConnect()">{{ curr.connected ? "disconnect" : "connect" }}</button>
+                                <button @click="togglePosting()">{{ curr.posting ? "stop posting" : "start posting" }}</button>
+                                <button @click="shutdown()">shutdown</button>
                                 <div class="spacer"></div>
-                                <div class="panels">
+                                <div class="puppet-container">
+                                    <div class="puppet-row" v-for="puppet in puppets" v-if="puppet.peerid !== currentPuppetId">
+                                        <span> {{ puppet.nick }} </span>
+                                        <div class="radio-container">
+                                            <input :id="'yes-' + puppet.peerid" type='radio' name="trust"/>
+                                            <label :for="'yes-' + puppet.peerid">trust</label>
+                                            <input :id="'no-' + puppet.peerid" type='radio' name="distrust"/>
+                                            <label :for="'no-' + puppet.peerid">distrust</label>
+                                        </div>
+                                        <select v-model="trustSelect">
+                                            <option v-for="val in [0.0, 0.25, 0.50, 0.80, 1.0]" :value="val"> {{ val }}</option>
+                                        </select>
+                                        <!-- <select v&#45;model="trustidSelect"> -->
+                                        <!--     <option v&#45;for="id in everyoneButMe" :value="id"> {{ puppets[id].nick }}</option> -->
+                                        <!-- </select> -->
+                                        <button @click="toggleMute(puppet)"> {{ isMuted(puppet.peerid) ? "unmute" : "mute" }} </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="panels panels-auto">
                                     <div class="mute-container">
                                         <div>
                                             <h4> Mutes </h4>
@@ -119,33 +128,35 @@ Vue.component("base-view", {
                                             </ul>
                                         </div>
                                         <div>
-                                        <h4> Most trusted </h4>
-                                        <div v-if="!(currentPuppetId in mostTrusted) || mostTrusted[currentPuppetId].length === 0"><i> none </i></div> 
-                                        <ul v-else>
-                                            <li v-for="puppet in mostTrusted[currentPuppetId]"> {{ puppetNick(puppet) }} </li>
-                                        </ul>
+                                            <h4> Most trusted </h4>
+                                            <div v-if="!(currentPuppetId in mostTrusted) || mostTrusted[currentPuppetId].length === 0"><i> none </i></div> 
+                                            <ul v-else>
+                                                <li v-for="puppet in mostTrusted[currentPuppetId]"> {{ puppetNick(puppet) }} </li>
+                                            </ul>
                                         </div>
+                                    </div>
                                 </div>
                             </div>
-                        </template>
-                    </div>
+                        </div>
+                    </template>
                 </div>
-                <div class="log-panel" :class="{'debug-theme': debug}">
-                    <button @click="sendCommand('spawn')">new puppet</button>
-                    <button @click="debug = !debug"> {{ debug ? "chat" : "debug" }}</button>
-                    <div v-show="debug" class="debug" :class="{'active-scroller': debug}">
-                        <pre v-for="log in rawlogs">{{ log }}</pre>
-                    </div>
-                    <div v-show="!debug" class="chat" :class="{'active-scroller': !debug}">
-                        <div id="chat">
-                            <div v-for="msg in chat[currentPuppetId]" :class="{muted: isMuted(msg.author)}">
-                                {{ formatDate(msg.timestamp) }} <{{ puppetNick(msg.author) }}> {{ msg.message }}
-                            </div>
+            </div>
+            <div class="log-panel" :class="{'debug-theme': debug}">
+                <button @click="sendCommand('spawn')">new puppet</button>
+                <button @click="debug = !debug"> {{ debug ? "chat" : "debug" }}</button>
+                <div v-show="debug" class="debug" :class="{'active-scroller': debug}">
+                    <pre v-for="log in rawlogs">{{ log }}</pre>
+                </div>
+                <div v-show="!debug" class="chat" :class="{'active-scroller': !debug}">
+                    <div id="chat">
+                        <div v-for="msg in chat[currentPuppetId]" :class="{muted: isMuted(msg.author)}">
+                            {{ formatDate(msg.timestamp) }} <{{ puppetNick(msg.author) }}> {{ msg.message }}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
     `,
     data () {
         return {
@@ -262,18 +273,19 @@ Vue.component("base-view", {
         isMuted (puppetid) {
             return this.currentMutes.includes(puppetid)
         },
-        toggleMute () {
-            let isMuted = this.currentMutes.includes(this.muteSelect)
+        toggleMute (puppet) {
+            const pid = puppet.peerid
+            let isMuted = this.currentMutes.includes(pid)
             let command 
             if (isMuted) {
                 command = "unmute"
-                let i = this.mutes.findIndex((m) => m.origin === this.currentPuppetId && m.target === this.muteSelect)
+                let i = this.mutes.findIndex((m) => m.origin === this.currentPuppetId && m.target === pid)
                 this.mutes.splice(i, 1)
             } else {
                 command = "mute"
-                this.mutes.push({ origin: this.currentPuppetId, target: this.muteSelect })
+                this.mutes.push({ origin: this.currentPuppetId, target: pid })
             }
-            this.POST({ url: `${command}/${this.currentPuppetId ? this.currentPuppetId : -1}/${this.muteSelect}/`, cb: this.log})
+            this.POST({ url: `${command}/${this.currentPuppetId ? this.currentPuppetId : -1}/${pid}/`, cb: this.log})
         },
         toggleConnect () {
             let puppet = this.puppets[this.currentPuppetId]
