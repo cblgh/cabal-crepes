@@ -25,43 +25,14 @@ async function wait (ms) {
     })
 }
 
-/*
- a trusts [b, c]
- c trusts d
- x trusts z
-
- outcome:
- we should see from a's POV that we have a, b and c in our trust network
- */
+// spawn 6 puppets
 scenarios["one"] = function () {
-    // spawn 6 puppets
     this.sendCommand('spawn') // 0
     this.sendCommand('spawn') // 1
     this.sendCommand('spawn') // 2
     this.sendCommand('spawn') // 3
     this.sendCommand('spawn') // 4
     this.sendCommand('spawn') // 5
-    let trust = (src, dst) => {
-        this.currentPuppetId = src
-        this.trustSelect = 0.8
-        this.trustidSelect = dst
-        this.setTrust()
-    }
-    // setTimeout(async () => {
-    //     let zilch = this.idFromName("zilch")    // a
-    //     let ein = this.idFromName("ein")        // b
-    //     let zwei = this.idFromName("zwei")      // c
-    //     let drei = this.idFromName("drei")      // d
-    //     let shi = this.idFromName("shi")        // x
-    //     let go = this.idFromName("go")          // y
-    //     trust(zilch, ein)
-    //     await wait(8000)
-    //     trust(zilch, zwei)
-    //     await wait(8000)
-    //     trust(ein, drei)
-    //     await wait(8000)
-    //     trust(shi, go)
-    // }, 5000)
 }
 
 Vue.component("base-view", {
@@ -94,15 +65,12 @@ Vue.component("base-view", {
                                         <select @change="updateTrust" :data-puppetid="puppet.peerid">
                                             <option v-for="val in [0.0, 0.25, 0.50, 0.80, 1.0]" :selected="determineTrustValue(puppet.peerid, val)" :value="val"> {{ val }}</option>
                                         </select>
-                                        <!-- <select v&#45;model="trustidSelect"> -->
-                                        <!--     <option v&#45;for="id in everyoneButMe" :value="id"> {{ puppets[id].nick }}</option> -->
-                                        <!-- </select> -->
                                         <button @click="toggleMute(puppet)"> {{ isMuted(puppet.peerid) ? "unmute" : "mute" }} </button>
                                     </div>
                                 </div>
                             </div>
                             <div>
-                                <div class="panels panels-auto">
+                                <div class="panels panels-16">
                                     <div class="mute-container">
                                         <div>
                                             <h4> Mutes </h4>
@@ -165,11 +133,8 @@ Vue.component("base-view", {
             mutes: [], // list of { origin: <puppetid>, target: <puppetid> }
             trust: {}, // trust[origin][target] = amount
             chat: {},
-            muteSelect: "",
             mostTrusted: {},
             rankings: {},
-            trustSelect: 0,
-            trustidSelect: "",
             debug: false,
             puppets: {},
             currentPuppetId: ""
@@ -212,16 +177,6 @@ Vue.component("base-view", {
         })
         scenarios["one"].bind(this)()
     },
-    watch: {
-        currentPuppetId (origin) {
-            let target = this.trustidSelect
-            this.fixTrustSelect(origin, target)
-        },
-        trustidSelect (target) {
-            let origin = this.currentPuppetId
-            this.fixTrustSelect(origin, target)
-        }
-    },
     methods: {
         determineTrustValue(puppetid, value) {
             if (!this.trust[this.currentPuppetId]) return false
@@ -251,14 +206,6 @@ Vue.component("base-view", {
                 node.listener = listener
                 this.listeners[d3data.peerid] = { node, listener, type: "click" }
             })
-        },
-        fixTrustSelect(origin, target) {
-            if (origin in this.trust && target in this.trust[origin]) {
-                let amt = this.trust[origin][target].amount
-                this.trustSelect = this.trust[origin][target].amount
-            } else {
-                this.trustSelect = 0
-            }
         },
         setTrust (target, amount) {
             let origin = this.currentPuppetId
