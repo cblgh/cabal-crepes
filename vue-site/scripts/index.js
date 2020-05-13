@@ -225,7 +225,6 @@ Vue.component("base-view", {
             }
             return null
         },
-
         isMuted (puppetid) {
             return this.currentMutes.includes(puppetid)
         },
@@ -241,6 +240,8 @@ Vue.component("base-view", {
                 command = "mute"
                 this.mutes.push({ origin: this.currentPuppetId, target: pid })
             }
+            // TODO: make more robust & transitive
+            nodeGraph.updateNode({ peerid: pid, nick: this.puppetNick(pid), muted: command === "mute" })
             this.POST({ url: `${command}/${this.currentPuppetId ? this.currentPuppetId : -1}/${pid}/`, cb: this.log})
         },
         toggleConnect () {
@@ -290,7 +291,7 @@ Vue.component("base-view", {
             // initialize the state for each puppet
             Object.keys(data).forEach((puppetid) => {
                 let datum = data[puppetid]
-                this.puppets[puppetid] = { nick: datum.nick, cabal: datum.cabal, peerid: puppetid, connected: datum.connected, posting: datum.posting }
+                this.puppets[puppetid] = { nick: datum.nick, peerid: puppetid, connected: datum.connected, posting: datum.posting }
                 // add all the trust state 
                 datum.trust.forEach((t) => {
                     if (!(t.origin in this.trust)) this.trust[t.origin] = {}
@@ -308,18 +309,18 @@ Vue.component("base-view", {
                     this.chat[puppetid].push({ message: msg.content, author: msg.author, timestamp: msg.time })
                 })
                 // update d3 node graph
-                nodeGraph.addNode({ cabal: datum.cabal, peerid: puppetid, nick: datum.nick })
+                nodeGraph.addNode({ peerid: puppetid, nick: datum.nick })
             this.chat[puppetid].sort((a, b) => parseInt(a.timestamp) - parseInt(b.timestamp))
             })
         },
         processMessage (msg) {
             let data = JSON.parse(msg)
             if (data.type === "register") {
-                this.puppets[data.peerid] = { nick: data.peerid, cabal: data.cabal, peerid: data.peerid, connected: true, posting: false }
+                this.puppets[data.peerid] = { nick: data.peerid, peerid: data.peerid, connected: true, posting: false }
             } else if (data.type === "nickChanged") {
                 this.puppets[data.peerid].nick = data.data
                 // node is counted as initialized when its nick has been set properly
-                nodeGraph.addNode({ peerid: data.peerid, cabal: data.cabal, nick: data.data})
+                nodeGraph.addNode({ peerid: data.peerid, nick: data.data})
             } else if (data.type === "messagePosted") {
                 if (!(data.peerid in this.chat)) this.chat[data.peerid] = []
                 this.chat[data.peerid].push({ message: data.data, author: data.peerid, timestamp: +(new Date()) })

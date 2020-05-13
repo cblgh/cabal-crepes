@@ -1,7 +1,11 @@
 const purple = "#8D52F4"
 const teal = "#30D6C5"
+const darkteal = "#1D8777"
 const red = "#FF898C"
 const gold = "#FBDC93"
+const MUTED = -1
+const DISTRUSTED = -2
+const NORMAL = 0
 /* jsnetworkx docs:
  * https://github.com/fkling/JSNetworkX/wiki/Drawing-graphs
  * http://jsnetworkx.org/api/#/v/v0.3.4/DiGraph
@@ -27,7 +31,9 @@ function Graph () {
         },
         nodeStyle: {
             fill: function(d) { 
-                if (typeof d.data.group === "undefined") return red
+                if (d.data.group === MUTED) return red
+                else if (d.data.group === DISTRUSTED) return darkteal
+                // normal node
                 return purple
             },
             stroke: "none"
@@ -63,23 +69,28 @@ Graph.prototype.removeEdge = function (src, dst) {
     jsnx.draw(this.graph, this.d3opts) 
 }
 
-Graph.prototype.addNode = function (info) {
+Graph.prototype.addNode = function (info, redraw) {
     let node = info.nick
-    let cabal = info.cabal.substr(0, 3)
 
     if (this.peers.has(node) === false) {
         this.peers.add(node)
-        this.graph.addNode(node, { group: 0, peerid: info.peerid, cabal: info.cabal })
-        // this.peers.forEach((i) => {
-        //     this.graph.addEdgesFrom([[cabal, i], [i, cabal]])
-        // })
+        this.graph.addNode(node, { group: info.muted ? -1 : 0, peerid: info.peerid })
     }
-    jsnx.draw(this.graph, this.d3opts) 
+    if (typeof redraw === "undefined" || redraw) {
+        jsnx.draw(this.graph, this.d3opts) 
+    }
 }
 
-Graph.prototype.removeNode = function (info) {
+Graph.prototype.updateNode = function (info) {
+    this.removeNode(info, false)
+    this.addNode(info, true)
+}
+
+Graph.prototype.removeNode = function (info, redraw) {
     let node = info.nick 	
     this.peers.delete(node)
     this.graph.removeNode(node)
-    jsnx.draw(this.graph, this.d3opts) 
+    if (typeof redraw === "undefined" || redraw) {
+        jsnx.draw(this.graph, this.d3opts) 
+    }
 }
