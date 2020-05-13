@@ -240,8 +240,9 @@ Vue.component("base-view", {
                 command = "mute"
                 this.mutes.push({ origin: this.currentPuppetId, target: pid })
             }
-            // TODO: make more robust & transitive
-            nodeGraph.updateNode({ peerid: pid, nick: this.puppetNick(pid), muted: command === "mute" })
+            if (["zilch", "you"].includes(this.puppetNick(this.currentPuppetId))) {
+                nodeGraph.updateNode({ peerid: pid, nick: this.puppetNick(pid), muted: command === "mute" })
+            }
             this.POST({ url: `${command}/${this.currentPuppetId ? this.currentPuppetId : -1}/${pid}/`, cb: this.log})
         },
         toggleConnect () {
