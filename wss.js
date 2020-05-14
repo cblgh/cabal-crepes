@@ -19,6 +19,7 @@ function CentralWSS (server) {
     this.puppets = {}
     this.consumers = []
     this.trustnets = {}
+    this.distrustMap = {}
 
     this.wsevents = {
         "register": (data, sock) => {
@@ -223,8 +224,23 @@ CentralWSS.prototype.unmute = function (originid, targetid) {
 }
 
 CentralWSS.prototype.trust = function (originid, targetid, amount) {
+    if (this.distrustMap[originid]) {
+        let index = this.distrustMap[originid].indexOf(targetid)
+        if (index >= 0) { this.distrustMap[originid].splice(index, 1) }
+    }
     this._send(originid, { type: "trust", data: { target: targetid, weight: amount }})
     return "trust update issued by " + originid
+}
+
+CentralWSS.prototype.distrust = function (originid, targetid) {
+    if (!this.distrustMap[originid]) this.distrustMap[originid] = []
+    if (!this.distrustMap[originid].includes(targetid)) {
+        this.distrustMap[originid].push(targetid)
+    }
+    // TODO: issue some kind of event that forces the browser to update
+    this._updateTrustNet().then(() => {
+    })
+    return "distrust issued by " + originid
 }
 
 CentralWSS.prototype._getAllMostTrusted = function () {
@@ -268,14 +284,14 @@ CentralWSS.prototype._collectTrust = function () {
     return trustEdges.map((t) => { return { src: t.origin, dst: t.target, weight: t.amount } })
 }
 
-/* remove dependence on zilch */
+/* todo: remove dependence on zilch */
 CentralWSS.prototype._updateTrustNet = async function () {
     return new Promise((res, rej) => {
         let trustEdges = this._collectTrust()
         debug(trustEdges)
         let promises = []
         let zilch = Object.entries(this.puppets).filter((p) => p[1].nick === "zilch")[0][0]
-        promises.push(this.trustnets[zilch].load(zilch, trustEdges))
+        promises.push(this.trustnets[zilch].load(zilch, trustEdges, this.distrustMap[zilch] || []))
         // for (let puppetid of Object.keys(this.puppets)) {
         //     debug(puppetid, this.puppets[puppetid].trust.length)
         //     if (this.puppets[puppetid].trust.length > 0) {

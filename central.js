@@ -75,6 +75,12 @@ app.post("/trust/:origin/:target/:amount", (req, res) => {
     res.json({ msg }).send()
 })
 
+app.post("/distrust/:origin/:target/", (req, res) => {
+    console.log(`distrust issued for puppet #${req.params.target} by ${req.params.origin}`)
+    var msg = central.distrust(req.params.origin, req.params.target)
+    res.json({ msg }).send()
+})
+
 app.post("/mute/:origin/:target", (req, res) => {
     console.log(`mute issued for puppet #${req.params.target} by ${req.params.origin}`)
     var msg = central.mute(req.params.origin, req.params.target)

@@ -3,8 +3,10 @@ const teal = "#30D6C5"
 const darkteal = "#1D8777"
 const red = "#FF898C"
 const gold = "#FBDC93"
+const darkpurple = "#45257E"
 const MUTED = -1
 const DISTRUSTED = -2
+const DISTRUSTED_AND_MUTED = -3
 const NORMAL = 0
 /* jsnetworkx docs:
  * https://github.com/fkling/JSNetworkX/wiki/Drawing-graphs
@@ -33,6 +35,7 @@ function Graph () {
             fill: function(d) { 
                 if (d.data.group === MUTED) return red
                 else if (d.data.group === DISTRUSTED) return darkteal
+                else if (d.data.group === DISTRUSTED_AND_MUTED) return darkpurple
                 // normal node
                 return purple
             },
@@ -72,9 +75,13 @@ Graph.prototype.removeEdge = function (src, dst) {
 Graph.prototype.addNode = function (info, redraw) {
     let node = info.nick
 
+    let group = 0
+    if (info.muted && info.distrusted) group = DISTRUSTED_AND_MUTED
+    else if (info.muted) group = MUTED
+    else if (info.distrusted) group = DISTRUSTED
     if (this.peers.has(node) === false) {
         this.peers.add(node)
-        this.graph.addNode(node, { group: info.muted ? -1 : 0, peerid: info.peerid })
+        this.graph.addNode(node, { group, peerid: info.peerid })
     }
     if (typeof redraw === "undefined" || redraw) {
         jsnx.draw(this.graph, this.d3opts) 
