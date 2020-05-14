@@ -62,8 +62,9 @@ function Graph () {
     }
 }
 
-Graph.prototype.setEdge = function (src, dst, weight) {
-    this.graph.addEdge(src, dst, { weight })
+Graph.prototype.setEdge = function (src, dst) {
+    console.log(src, "->", dst)
+    this.graph.addEdge(src, dst)
     jsnx.draw(this.graph, this.d3opts) 
 }
 
@@ -88,9 +89,20 @@ Graph.prototype.addNode = function (info, redraw) {
     }
 }
 
+Graph.prototype.draw = function () {
+    jsnx.draw(this.graph, this.d3opts) 
+}
+
 Graph.prototype.updateNode = function (info) {
+    // make a copy of the outgoing and incoming edges for the node we're updating
+    const edges = this.graph.outEdges(info.nick).concat(this.graph.inEdges(info.nick)).slice()
     this.removeNode(info, false)
-    this.addNode(info, true)
+    this.addNode(info, false)
+    // restore the edges
+    edges.forEach((pair) => {
+        this.setEdge(pair[0], pair[1])
+    })
+    this.draw()
 }
 
 Graph.prototype.removeNode = function (info, redraw) {

@@ -232,10 +232,17 @@ CentralWSS.prototype.trust = function (originid, targetid, amount) {
     return "trust update issued by " + originid
 }
 
-CentralWSS.prototype.distrust = function (originid, targetid) {
+CentralWSS.prototype.distrust = function (originid, targetid, bool) {
     if (!this.distrustMap[originid]) this.distrustMap[originid] = []
-    if (!this.distrustMap[originid].includes(targetid)) {
-        this.distrustMap[originid].push(targetid)
+    if (bool) {
+        // distrust isssued
+        if (!this.distrustMap[originid].includes(targetid)) {
+            this.distrustMap[originid].push(targetid)
+        }
+    } else {
+        // distrust revoked
+        const index = this.distrustMap[originid].indexOf(targetid)
+        if (index >= 0) { this.distrustMap[origindid].splice(index, 1) } 
     }
     // TODO: issue some kind of event that forces the browser to update
     this._updateTrustNet().then(() => {

@@ -78,7 +78,7 @@ Vue.component("base-view", {
                                             <h4> Mutes </h4>
                                             <div v-if="currentMutes.length === 0"><i> none </i></div> 
                                             <ul v-else>
-                                                <li v-for="mute in currentMutes"> {{ puppetNick(mute) }} via {{ "self" || puppetNick(currentPuppetId) }} </li>
+                                                <li v-for="mute in currentMutes"> {{ puppetNick(mute.target) }} via {{ mute.origin === currentPuppetId ? 'self' : puppetNick(mute.origin) }} </li>
                                             </ul>
                                         </div>
                                         <div>
@@ -154,7 +154,9 @@ Vue.component("base-view", {
             if (this.mostTrusted[this.currentPuppetId]) {
                 trustList = trustList.concat(this.mostTrusted[this.currentPuppetId])
             }
-            return this.mutes.filter((m) => trustList.includes(m.origin)).map((m) => m.target)
+            return this.mutes.filter((m) => trustList.includes(m.origin)).map((m) => { 
+                return { origin: m.origin, target:  m.target } 
+            })
         },
         everyoneButMe () {
             let keys = Object.keys(this.puppets)
@@ -191,6 +193,9 @@ Vue.component("base-view", {
             } else {
                 this.distrust.splice(index, 1)
             }
+            const origin = this.currentPuppetId
+            const bool = command === "distrust"
+            this.POST({ url: `distrust/${origin}/${pid}/${bool}/`, cb: this.log})
             nodeGraph.updateNode({ peerid: pid, nick: this.puppetNick(pid), distrusted: command === "distrust", muted: this.isMuted(pid) })
         },
         determineTrustValue(puppetid, value) {
@@ -228,7 +233,7 @@ Vue.component("base-view", {
             if (parseFloat(amount) === 0) {
                 nodeGraph.removeEdge(this.puppetNick(origin), this.puppetNick(target))
             } else {
-                nodeGraph.setEdge(this.puppetNick(origin), this.puppetNick(target), amount)
+                nodeGraph.setEdge(this.puppetNick(origin), this.puppetNick(target))
             }
             this.trust[origin][target] = { origin, target, amount }
             this.POST({ url: `trust/${origin}/${target}/${amount}/`, cb: this.log})
@@ -241,14 +246,14 @@ Vue.component("base-view", {
             return null
         },
         isMuted (puppetid) {
-            return this.currentMutes.includes(puppetid)
+            return this.currentMutes.map((m) => m.target).includes(puppetid)
         },
         isDistrusted (puppetid) {
             return this.distrust.includes(puppetid)
         },
         toggleMute (puppet) {
             const pid = puppet.peerid
-            let isMuted = this.currentMutes.includes(pid)
+            let isMuted = this.isMuted(pid)
             let command 
             if (isMuted) {
                 command = "unmute"
