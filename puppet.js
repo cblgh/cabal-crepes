@@ -24,11 +24,12 @@ function Puppet (cabalkey, server, opts) {
     this.server = server
     this.cabalkey = cabalkey.replace("cabal://", "").replace("cbl://", "")
     this.headless = Headless(cabalkey, { temp: opts.temp || true })
-    this.POST_INTERVAL = 5000 /* ms */
+    this.POST_INTERVAL = 8000 /* ms */
     this.SERVER_TIMEOUT = 8000 /* ms */ 
     this.localKey = thunky((cb) => {
         this.headless.id(cb)
     })
+    this.dialogue = fs.readFileSync("./dialogue.txt").toString().split("\n")
 
     this.wsevents = {
         connect: () => {
@@ -169,9 +170,18 @@ Puppet.prototype.startPosting = function () {
     if (this.postloop) {
         clearInterval(this.postloop)
     }
+    const randomizedPostInterval = randomizePostInterval(this.POST_INTERVAL)
     this.postloop = startInterval(() => {
-        this.post({ type: "messagePosted", data: "" + new Date().toUTCString() })
-    }, this.POST_INTERVAL)
+        this.post({ type: "messagePosted", data: this.getDialogueLine() })
+    }, randomizedPostInterval)
+}
+
+function randomizePostInterval (base) {
+    return Math.floor(Math.random() * base *  2) + base
+}
+
+Puppet.prototype.getDialogueLine = function () {
+    return this.dialogue[Math.floor(this.dialogue.length * Math.random())]
 }
 
 Puppet.prototype.trust = function (data) {

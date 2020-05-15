@@ -41,8 +41,9 @@ function Graph () {
             },
             stroke: "none"
         },
-        edgeLabels: function (d) {
-            return d.data.weight
+        labels: function (d) {
+            console.log(d, d.data)
+            return d.node.slice(0,4)
         },
         labelStyle: { fill: "white" },
         edgeLabelStyle: { fill: purple },
@@ -99,9 +100,11 @@ Graph.prototype.updateNode = function (info) {
     this.removeNode(info, false)
     this.addNode(info, false)
     // restore the edges
-    edges.forEach((pair) => {
-        this.setEdge(pair[0], pair[1])
-    })
+    if (!info.distrusted) {
+        edges.forEach((pair) => {
+            this.setEdge(pair[0], pair[1])
+        })
+    }
     this.draw()
 }
 

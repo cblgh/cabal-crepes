@@ -4,7 +4,7 @@ var events = require("events")
 var TrustNet = require("trust-net")
 var debug = require("debug")("crepes")
 
-var NAMES = ["zilch", "ein", "zwei", "drei", "shi", "go", "sex", "siete", "hachi", "neuf"]
+var NAMES = ["you", "johan", "karl-erik", "valentine", "edmond", "troll", "count troll", "cristo", "ruthven", "hachi", "neuf"]
 
 function CentralWSS (server) {
     if (!(this instanceof CentralWSS)) return new CentralWSS(server)

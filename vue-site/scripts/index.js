@@ -54,18 +54,19 @@ Vue.component("base-view", {
                                 <button @click="shutdown()">shutdown</button>
                                 <div class="spacer"></div>
                                 <div class="puppet-container">
+                                    <div class="puppet-row">
+                                        <div class="moderation-label">Moderation similarity</div>
+                                    </div>
                                     <div class="puppet-row" v-for="puppet in puppets" :key="puppet.peerid" v-if="puppet.peerid !== currentPuppetId">
                                         <span> {{ puppet.nick }} </span>
                                         <div class="radio-container">
-                                            <template v-if="['zilch', 'you'].includes(puppetNick(currentPuppetId))">
-                                            <input @change="toggleDistrust" :checked="!distrust.includes(puppet.peerid)" :id="'yes-' + puppet.peerid" :data-puppetid="puppet.peerid" type='radio' value="trust" :name="'trust- '+ puppet.peerid"/>
+                                            <input @change="toggleDistrust" :disabled="isDisabled" :checked="!isDisabled && !isDistrusted(puppet.peerid)" :id="'yes-' + puppet.peerid" :data-puppetid="puppet.peerid" type='radio' value="trust" :name="'trust- '+ puppet.peerid"/>
                                             <label :for="'yes-' + puppet.peerid">trust</label>
-                                            <input @change="toggleDistrust" :id="'no-' + puppet.peerid" :data-puppetid="puppet.peerid" type='radio' value="distrust" :name="'trust- '+ puppet.peerid"/>
+                                            <input @change="toggleDistrust" :disabled="isDisabled" :checked="!isDisabled && isDistrusted(puppet.peerid)" :id="'no-' + puppet.peerid" :data-puppetid="puppet.peerid" type='radio' value="distrust" :name="'trust- '+ puppet.peerid"/>
                                             <label :for="'no-' + puppet.peerid">distrust</label>
-                                            </template>
                                         </div>
-                                        <select @change="updateTrust" :data-puppetid="puppet.peerid">
-                                            <option v-for="val in [0.0, 0.25, 0.50, 0.80, 1.0]" :selected="determineTrustValue(puppet.peerid, val)" :value="val"> {{ val }}</option>
+                                        <select @change="updateTrust" :disabled="isDistrusted(puppet.peerid)" :data-puppetid="puppet.peerid">
+                                            <option v-for="label in moderationLabels" :selected="determineTrustValue(puppet.peerid, moderationValues[label])" :value="moderationValues[label]"> {{ label }}</option>
                                         </select>
                                         <button @click="toggleMute(puppet)"> {{ isMuted(puppet.peerid) ? "unmute" : "mute" }} </button>
                                     </div>
@@ -130,6 +131,8 @@ Vue.component("base-view", {
     `,
     data () {
         return {
+            moderationValues: { "None": 0, "Some overlap": 0.25, "Similar": 0.80, "Identical": 1 },
+            moderationLabels: ["None", "Some overlap", "Similar", "Identical"],
             listeners: {},
             rawlogs: [],
             distrust: [],
@@ -144,6 +147,9 @@ Vue.component("base-view", {
         }
     },
     computed: {
+        isDisabled () {
+            return !['zilch', 'you'].includes(this.puppetNick(this.currentPuppetId))
+        },
         curr () {
             if (!(this.currentPuppetId in this.puppets)) return {}
             return this.puppets[this.currentPuppetId]
@@ -184,12 +190,13 @@ Vue.component("base-view", {
     },
     methods: {
         toggleDistrust (e) {
-            if (!["you", "zilch"].includes(this.puppetNick(this.currentPuppetId))) { return }
+            if (this.isDisabled) return
             const pid = e.target.dataset.puppetid
             const index = this.distrust.indexOf(pid)
             const command = e.target.value
             if (command === "distrust" && index < 0) {
                 this.distrust.push(pid)
+                this.setTrust(pid, 0)
             } else {
                 this.distrust.splice(index, 1)
             }
@@ -263,7 +270,7 @@ Vue.component("base-view", {
                 command = "mute"
                 this.mutes.push({ origin: this.currentPuppetId, target: pid })
             }
-            if (["zilch", "you"].includes(this.puppetNick(this.currentPuppetId))) {
+            if (!this.isDisabled) {
                 nodeGraph.updateNode({ peerid: pid, nick: this.puppetNick(pid), muted: command === "mute", distrusted: this.isDistrusted(pid) })
             }
             this.POST({ url: `${command}/${this.currentPuppetId ? this.currentPuppetId : -1}/${pid}/`, cb: this.log})
