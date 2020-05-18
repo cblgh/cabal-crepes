@@ -277,8 +277,11 @@ Vue.component("base-view", {
                 command = "mute"
                 this.mutes.push({ origin: this.currentPuppetId, target: pid })
             }
-            if (!this.isDisabled) {
-                nodeGraph.updateNode({ peerid: pid, nick: this.puppetNick(pid), muted: command === "mute", distrusted: this.isDistrusted(pid) })
+
+            const trustedByYou = this.mostTrusted[this.idFromName("you")].includes(this.currentPuppetId)
+            if (!this.isDisabled || trustedByYou) {
+                // we invoke isMuted(pid) again to make sure we don't have any additional mutes in effect
+                nodeGraph.updateNode({ peerid: pid, nick: this.puppetNick(pid), muted: this.isMuted(pid), distrusted: this.isDistrusted(pid) })
             }
             this.POST({ url: `${command}/${this.currentPuppetId ? this.currentPuppetId : -1}/${pid}/`, cb: this.log})
         },
