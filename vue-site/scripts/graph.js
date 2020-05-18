@@ -1,5 +1,10 @@
 const purple = "#8D52F4"
-const teal = "#30D6C5"
+const teal = ""
+const TEAL = { 
+    "0.25": "#A2F1E9",
+    "0.8": "#30D6C5",
+    "1": "#25B1A3"
+}
 const darkteal = "#1D8777"
 const red = "#FF898C"
 const gold = "#FBDC93"
@@ -53,17 +58,18 @@ function Graph () {
                 return base
             },
             fill: function (d) {
+                console.log(d, d.data)
                 // if edge in reverse direction exists, we have a bidirectional edge
                 // colour it differently, to make it stand out
                 if (d.G.hasEdge(d.edge[1], d.edge[0])) return gold
-                return teal 
+                return TEAL[`${d.data.weight}`]
             }
         }
     }
 }
 
-Graph.prototype.setEdge = function (src, dst) {
-    this.graph.addEdge(src, dst)
+Graph.prototype.setEdge = function (src, dst, weight) {
+    this.graph.addEdge(src, dst, { weight })
     jsnx.draw(this.graph, this.d3opts) 
 }
 
@@ -94,13 +100,13 @@ Graph.prototype.draw = function () {
 
 Graph.prototype.updateNode = function (info) {
     // make a copy of the outgoing and incoming edges for the node we're updating
-    const edges = this.graph.outEdges(info.nick).concat(this.graph.inEdges(info.nick)).slice()
+    const edges = this.graph.outEdges(info.nick).concat(this.graph.inEdges(info.nick)).map((pair) => [...pair, this.graph.getEdgeData(...pair).weight]).slice()
     this.removeNode(info, false)
     this.addNode(info, false)
     // restore the edges
     if (!info.distrusted) {
         edges.forEach((pair) => {
-            this.setEdge(pair[0], pair[1])
+            this.setEdge(...pair)
         })
     }
     this.draw()
