@@ -234,9 +234,12 @@ CentralWSS.prototype.trust = function (originid, targetid, amount) {
 
 CentralWSS.prototype.distrust = function (originid, targetid, bool) {
     if (!this.distrustMap[originid]) this.distrustMap[originid] = []
+    console.log(originid.slice(0,3), "distrust map 1", this.distrustMap[originid])
+    console.log("the bool", bool)
     if (bool) {
         // distrust isssued
         if (!this.distrustMap[originid].includes(targetid)) {
+            console.log(originid.slice(0,3), "distrust map 2", this.distrustMap[originid])
             this.distrustMap[originid].push(targetid)
         }
     } else {
@@ -244,6 +247,7 @@ CentralWSS.prototype.distrust = function (originid, targetid, bool) {
         const index = this.distrustMap[originid].indexOf(targetid)
         if (index >= 0) { this.distrustMap[origindid].splice(index, 1) } 
     }
+    console.log(originid.slice(0,3), "distrust map 3", this.distrustMap[originid])
     // TODO: issue some kind of event that forces the browser to update
     this._updateTrustNet().then(() => {
     })

@@ -58,7 +58,6 @@ function Graph () {
                 return base
             },
             fill: function (d) {
-                console.log(d, d.data)
                 // if edge in reverse direction exists, we have a bidirectional edge
                 // colour it differently, to make it stand out
                 if (d.G.hasEdge(d.edge[1], d.edge[0])) return gold
@@ -80,8 +79,7 @@ Graph.prototype.removeEdge = function (src, dst) {
 }
 
 Graph.prototype.addNode = function (info, redraw) {
-    let node = info.nick
-
+    const node = info.nick
     let group = 0
     if (info.muted && info.distrusted) group = DISTRUSTED_AND_MUTED
     else if (info.muted) group = MUTED

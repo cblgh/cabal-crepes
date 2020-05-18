@@ -76,8 +76,8 @@ app.post("/trust/:origin/:target/:amount", (req, res) => {
 })
 
 app.post("/distrust/:origin/:target/:bool", (req, res) => {
-    console.log(`distrust ${req.params.bool ? 'issued' : 'revoked'} for puppet #${req.params.target} by ${req.params.origin}`)
-    var msg = central.distrust(req.params.origin, req.params.target)
+    console.log(`distrust ${req.params.bool ? 'issued' : 'revoked'} for puppet ${req.params.target.slice(0,3)} by ${req.params.origin.slice(0,3)}`)
+    var msg = central.distrust(req.params.origin, req.params.target, req.params.bool)
     res.json({ msg }).send()
 })
 
