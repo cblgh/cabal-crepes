@@ -74,6 +74,7 @@ Graph.prototype.setEdge = function (src, dst, weight) {
 }
 
 Graph.prototype.removeEdge = function (src, dst) {
+    if (!this.graph.hasEdge(src, dst)) { return }
     this.graph.removeEdge(src, dst)
     jsnx.draw(this.graph, this.d3opts) 
 }
@@ -114,6 +115,7 @@ Graph.prototype.updateNode = function (info) {
 
 Graph.prototype.removeNode = function (info, redraw) {
     let node = info.nick 	
+    if (this.peers.has(node) === false) { return }
     this.peers.delete(node)
     this.graph.removeNode(node)
     if (typeof redraw === "undefined" || redraw) {

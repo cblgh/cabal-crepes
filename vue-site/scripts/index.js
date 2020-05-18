@@ -263,6 +263,7 @@ Vue.component("base-view", {
             return this.currentMutes.map((m) => m.target).includes(puppetid)
         },
         isDistrusted (puppetid) {
+            if (this.currentPuppetId !== this.idFromName("you")) return false
             return this.distrust.includes(puppetid)
         },
         toggleMute (puppet) {
@@ -278,7 +279,7 @@ Vue.component("base-view", {
                 this.mutes.push({ origin: this.currentPuppetId, target: pid })
             }
 
-            const trustedByYou = this.mostTrusted[this.idFromName("you")].includes(this.currentPuppetId)
+            const trustedByYou = this.mostTrusted[this.idFromName("you")] ? this.mostTrusted[this.idFromName("you")].includes(this.currentPuppetId) : false
             if (!this.isDisabled || trustedByYou) {
                 // we invoke isMuted(pid) again to make sure we don't have any additional mutes in effect
                 nodeGraph.updateNode({ peerid: pid, nick: this.puppetNick(pid), muted: this.isMuted(pid), distrusted: this.isDistrusted(pid) })
