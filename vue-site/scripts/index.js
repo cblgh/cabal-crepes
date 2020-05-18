@@ -85,7 +85,7 @@ Vue.component("base-view", {
                                         <div v-if="puppetNick(currentPuppetId) === 'you'">
                                             <h4> Rankings </h4>
                                             <div v-if="rankings.length === 0"><i> none </i></div> 
-                                            <ul v-else class="rankings">
+                                            <ul v-else>
                                                 <li v-for="item in rankings" class="col-2">
                                                     <span>{{ puppetNick(item[0]) }}</span>
                                                     <span>{{ roundRank(item[1]) }}</span>
