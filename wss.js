@@ -291,14 +291,14 @@ CentralWSS.prototype._collectTrust = function () {
     return trustEdges.map((t) => { return { src: t.origin, dst: t.target, weight: t.amount } })
 }
 
-/* todo: remove dependence on zilch */
+/* todo: remove dependence on you */
 CentralWSS.prototype._updateTrustNet = async function () {
     return new Promise((res, rej) => {
         let trustEdges = this._collectTrust()
         debug(trustEdges)
         let promises = []
-        let zilch = Object.entries(this.puppets).filter((p) => p[1].nick === "zilch")[0][0]
-        promises.push(this.trustnets[zilch].load(zilch, trustEdges, this.distrustMap[zilch] || []))
+        let you = Object.entries(this.puppets).filter((p) => p[1].nick === "you")[0][0]
+        promises.push(this.trustnets[you].load(you, trustEdges, this.distrustMap[you] || []))
         // for (let puppetid of Object.keys(this.puppets)) {
         //     debug(puppetid, this.puppets[puppetid].trust.length)
         //     if (this.puppets[puppetid].trust.length > 0) {

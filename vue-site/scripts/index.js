@@ -82,11 +82,14 @@ Vue.component("base-view", {
                                                 <li v-for="mute in currentMutes"> {{ puppetNick(mute.target) }} via {{ mute.origin === currentPuppetId ? 'self' : puppetNick(mute.origin) }} </li>
                                             </ul>
                                         </div>
-                                        <div>
+                                        <div v-if="puppetNick(currentPuppetId) === 'you'">
                                             <h4> Rankings </h4>
-                                            <div v-if="!(currentPuppetId in rankings)"><i> none </i></div> 
-                                            <ul v-else>
-                                                <li v-for="(rank, puppet) in rankings[currentPuppetId]"> {{ puppetNick(puppet) }}: {{ rank }} </li>
+                                            <div v-if="rankings.length === 0"><i> none </i></div> 
+                                            <ul v-else class="rankings">
+                                                <li v-for="item in rankings" class="col-2">
+                                                    <span>{{ puppetNick(item[0]) }}</span>
+                                                    <span>{{ roundRank(item[1]) }}</span>
+                                                </li>
                                             </ul>
                                         </div>
                                     </div>
@@ -98,7 +101,7 @@ Vue.component("base-view", {
                                                 <li v-for="assignment in trust[currentPuppetId]"> {{ puppetNick(assignment.target) }} = {{ assignment.amount }} </li>
                                             </ul>
                                         </div>
-                                        <div>
+                                        <div v-if="puppetNick(currentPuppetId) === 'you'">
                                             <h4> Most trusted </h4>
                                             <div v-if="!(currentPuppetId in mostTrusted) || mostTrusted[currentPuppetId].length === 0"><i> none </i></div> 
                                             <ul v-else>
@@ -140,7 +143,7 @@ Vue.component("base-view", {
             trust: {}, // trust[origin][target] = amount
             chat: {},
             mostTrusted: {},
-            rankings: {},
+            rankings: [], // [[nodeId, nodeRank], ...] for the inspecting node (i.e. zilch/you)
             debug: false,
             puppets: {},
             currentPuppetId: ""
@@ -189,6 +192,10 @@ Vue.component("base-view", {
         scenarios["one"].bind(this)()
     },
     methods: {
+        roundRank (r) {
+            var multiplier = Math.pow(10, 2);
+            return Math.round(r * multiplier) / multiplier;
+        },
         toggleDistrust (e) {
             if (this.isDisabled) return
             const pid = e.target.dataset.puppetid
@@ -362,10 +369,12 @@ Vue.component("base-view", {
             } else if (data.type === "initialize") {
                 this.initializeState(JSON.parse(data.data))
             } else if (data.type === "trustNet") {
-                console.log(data.data)
                 this.mostTrusted = data.data.mostTrusted
-                this.rankings = data.data.rankings
-                console.log(JSON.stringify(data.data.rankings))
+                // TODO: remove dependence on zilch/you
+                this.rankings = Object.entries(data.data.rankings[Object.keys(data.data.rankings)[0]]).sort((a, b) => {
+                    return b[1] - a[1]
+                })
+                console.log(data.data)
                 console.log("trust net is updated!!")
             }
             this.scrollIntoView()

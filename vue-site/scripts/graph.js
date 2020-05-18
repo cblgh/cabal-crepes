@@ -42,8 +42,7 @@ function Graph () {
             stroke: "none"
         },
         labels: function (d) {
-            console.log(d, d.data)
-            return d.node.slice(0,4)
+            return d.node.slice(0,3)
         },
         labelStyle: { fill: "white" },
         edgeLabelStyle: { fill: purple },
@@ -64,7 +63,6 @@ function Graph () {
 }
 
 Graph.prototype.setEdge = function (src, dst) {
-    console.log(src, "->", dst)
     this.graph.addEdge(src, dst)
     jsnx.draw(this.graph, this.d3opts) 
 }
