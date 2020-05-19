@@ -103,11 +103,9 @@ Graph.prototype.updateNode = function (info) {
     this.removeNode(info, false)
     this.addNode(info, false)
     // restore the edges
-    if (!info.distrusted) {
-        edges.forEach((pair) => {
-            this.setEdge(...pair)
-        })
-    }
+    edges.forEach((pair) => {
+        this.setEdge(...pair)
+    })
     this.draw()
 }
 
