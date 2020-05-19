@@ -45,14 +45,13 @@ Vue.component("base-view", {
                     <div @click="currentPuppetId = puppet.peerid" class="tab" v-for="puppet in puppets" :class="{ 'active-tab': puppet.peerid === currentPuppetId}" :value="puppet.peerid">{{ puppet.nick }}</div>
                 </div>
                 <div class="controls">
-                    <h3 v-if="currentPuppetId.length > 0">{{ puppetNick(currentPuppetId) }}:{{ currentPuppetId.slice(0, 3) }}</h3>
                     <template v-if="currentPuppetId.length > 0">
                         <div class="panels">
                             <div class="action-container">
-                                <button @click="toggleConnect()">{{ curr.connected ? "disconnect" : "connect" }}</button>
+                                <h3 v-if="currentPuppetId.length > 0">{{ puppetNick(currentPuppetId) }}:{{ currentPuppetId.slice(0, 3) }}</h3>
+                                <button v-show="false" @click="toggleConnect()">{{ curr.connected ? "disconnect" : "connect" }}</button>
                                 <button @click="togglePosting()">{{ curr.posting ? "stop posting" : "start posting" }}</button>
-                                <button @click="shutdown()">shutdown</button>
-                                <div class="spacer"></div>
+                                <button v-show="false" @click="shutdown()">shutdown</button>
                                 <div class="puppet-container">
                                     <div class="puppet-row">
                                         <div class="moderation-label">Moderation similarity</div>
@@ -73,7 +72,7 @@ Vue.component("base-view", {
                                 </div>
                             </div>
                             <div>
-                                <div class="panels panels-16">
+                                <div class="panels panels-16" style="margin-top: 1rem;">
                                     <div class="mute-container">
                                         <div>
                                             <h4> Mutes </h4>

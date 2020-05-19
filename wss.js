@@ -234,23 +234,27 @@ CentralWSS.prototype.trust = function (originid, targetid, amount) {
 
 CentralWSS.prototype.distrust = function (originid, targetid, bool) {
     if (!this.distrustMap[originid]) this.distrustMap[originid] = []
-    console.log(originid.slice(0,3), "distrust map 1", this.distrustMap[originid])
-    console.log("the bool", bool)
+    debug(originid.slice(0,3), "distrust map 1", this.distrustMap[originid])
+    debug("the bool", bool)
     if (bool) {
         // distrust isssued
         if (!this.distrustMap[originid].includes(targetid)) {
-            console.log(originid.slice(0,3), "distrust map 2", this.distrustMap[originid])
+            debug(originid.slice(0,3), "distrust map 2", this.distrustMap[originid])
             this.distrustMap[originid].push(targetid)
         }
     } else {
         // distrust revoked
         const index = this.distrustMap[originid].indexOf(targetid)
-        if (index >= 0) { this.distrustMap[origindid].splice(index, 1) } 
+        debug("index of distrusted node to re-trust", index)
+        if (index >= 0) { this.distrustMap[originid].splice(index, 1) } 
     }
-    console.log(originid.slice(0,3), "distrust map 3", this.distrustMap[originid])
+    debug(originid.slice(0,3), "distrust map 3", this.distrustMap[originid])
     // TODO: issue some kind of event that forces the browser to update
-    this._updateTrustNet().then(() => {
-    })
+            this._updateTrustNet().then(() => {
+                debug("let the consumers know that they should update")
+                let data = { mostTrusted: this._getAllMostTrusted(), rankings: this._getRankings() }
+                this._updateConsumers({ type: "trustNet", data })
+            })
     return "distrust issued by " + originid
 }
 
@@ -261,7 +265,7 @@ CentralWSS.prototype._getAllMostTrusted = function () {
             mostTrusted[puppetid] = this.trustnets[puppetid].getMostTrusted()
         }
     }
-    debug("wss - most trusted:", mostTrusted)
+    debug("wss - most trusted: %O", mostTrusted)
     return mostTrusted
 }
 
@@ -272,7 +276,7 @@ CentralWSS.prototype._getRankings = function () {
             rankings[puppetid] = this.trustnets[puppetid].getRankings()
         }
     }
-    debug("wss - rankings:", rankings)
+    debug("wss - rankings: %O", rankings)
     return rankings
 }
 
@@ -309,7 +313,6 @@ CentralWSS.prototype._updateTrustNet = async function () {
         //         promises.push(this.trustnets[puppetid].load(puppetid, trustEdges))
         //     }
         // }
-        debug(promises)
         Promise.all(promises).then(() => { res() })
     })
 }
