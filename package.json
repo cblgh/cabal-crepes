@@ -26,8 +26,8 @@
   "scripts": {
     "test": "standard --fix",
     "start": "DEBUG=appleseed,trustnet,creps node central.js",
-    "start-tnet": "DEBUG=trustnet,crepes node central.js",
-    "start-crepes": "DEBUG=crepes node central.js",
+    "start-tnet": "DEBUG=trustnet,demo node central.js",
+    "start-demo": "DEBUG=demo node central.js",
     "puppet": "node puppet.js --addr http://localhost:8877"
   },
   "repository": {

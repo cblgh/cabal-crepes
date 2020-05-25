@@ -28,11 +28,11 @@ async function wait (ms) {
 // spawn 6 puppets
 scenarios["one"] = function () {
     this.sendCommand('spawn') // 0
-    this.sendCommand('spawn') // 1
-    this.sendCommand('spawn') // 2
-    this.sendCommand('spawn') // 3
-    this.sendCommand('spawn') // 4
-    this.sendCommand('spawn') // 5
+    // this.sendCommand('spawn') // 1
+    // this.sendCommand('spawn') // 2
+    // this.sendCommand('spawn') // 3
+    // this.sendCommand('spawn') // 4
+    // this.sendCommand('spawn') // 5
 }
 
 Vue.component("base-view", {
@@ -67,7 +67,7 @@ Vue.component("base-view", {
                                         <select @change="updateTrust" :disabled="isDistrusted(puppet.peerid)" :data-puppetid="puppet.peerid">
                                             <option v-for="label in moderationLabels" :selected="determineTrustValue(puppet.peerid, moderationValues[label])" :value="moderationValues[label]"> {{ label }}</option>
                                         </select>
-                                        <button @click="toggleMute(puppet)"> {{ isMuted(puppet.peerid) ? "unmute" : "mute" }} </button>
+                                        <button @click="toggleMute(puppet)"> {{ isMuted(puppet.peerid) ? "unblock" : "block" }} </button>
                                     </div>
                                 </div>
                             </div>
@@ -75,7 +75,7 @@ Vue.component("base-view", {
                                 <div class="panels panels-16" style="margin-top: 1rem;">
                                     <div class="mute-container">
                                         <div>
-                                            <h4> Mutes </h4>
+                                            <h4> Blocks </h4>
                                             <div v-if="currentMutes.length === 0"><i> none </i></div> 
                                             <ul v-else>
                                                 <li v-for="mute in currentMutes"> {{ puppetNick(mute.target) }} via {{ mute.origin === currentPuppetId ? 'self' : puppetNick(mute.origin) }} </li>
@@ -115,7 +115,7 @@ Vue.component("base-view", {
                 </div>
             </div>
             <div class="log-panel" :class="{'debug-theme': debug}">
-                <button @click="sendCommand('spawn')">new puppet</button>
+                <button @click="sendCommand('spawn')">add participant</button>
                 <button @click="debug = !debug"> {{ debug ? "chat" : "debug" }}</button>
                 <div v-show="debug" class="debug" :class="{'active-scroller': debug}">
                     <pre v-for="log in rawlogs">{{ log }}</pre>
@@ -163,7 +163,7 @@ Vue.component("base-view", {
                 trustList = trustList.concat(this.mostTrusted[this.currentPuppetId])
             }
             return this.mutes.filter((m) => trustList.includes(m.origin)).map((m) => { 
-                return { origin: m.origin, target:  m.target } 
+                return { origin: m.origin, target: m.target } 
             })
         },
         everyoneButMe () {
@@ -188,9 +188,20 @@ Vue.component("base-view", {
             this.processMessage(evt.data)
             this.refreshGraphListeners()
         })
-        scenarios["one"].bind(this)()
+        scenarios["one"].bind(this)() 
     },
     methods: {
+        youMutes () {
+            const id = this.idFromName("you")
+            let trustList = [id]
+            if (!id) return []
+            if (this.mostTrusted[id]) {
+                trustList = trustList.concat(this.mostTrusted[id])
+            }
+            return this.mutes.filter((m) => trustList.includes(m.origin)).map((m) => { 
+                return { origin: m.origin, target: m.target } 
+            })
+        },
         roundRank (r) {
             var multiplier = Math.pow(10, 2);
             return Math.round(r * multiplier) / multiplier;
@@ -376,6 +387,10 @@ Vue.component("base-view", {
                 // TODO: remove dependence on zilch/you
                 this.rankings = Object.entries(data.data.rankings[Object.keys(data.data.rankings)[0]]).sort((a, b) => {
                     return b[1] - a[1]
+                })
+                const mutesByYou = this.youMutes().map((m) => m.target)
+                Object.keys(this.puppets).forEach((pid) => {
+                    nodeGraph.updateNode({ peerid: pid, nick: this.puppetNick(pid), muted: mutesByYou.includes(pid), distrusted: this.isDistrusted(pid) })
                 })
                 console.log(data.data)
                 console.log("trust net is updated!!")

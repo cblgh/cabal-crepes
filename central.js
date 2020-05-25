@@ -4,7 +4,7 @@ var Logger = require("./db")
 var static = require("serve-static")
 var path = require("path")
 var { spawn } = require("child_process")
-var debug = require("debug")("crepes")
+var debug = require("debug")("demo")
 
 var public = path.join(__dirname, "/vue-site")
 var app = express()

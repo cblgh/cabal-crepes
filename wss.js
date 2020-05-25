@@ -2,7 +2,7 @@ var WebSocket = require("ws")
 var inherits = require("inherits")
 var events = require("events")
 var TrustNet = require("trust-net")
-var debug = require("debug")("crepes")
+var debug = require("debug")("demo")
 
 var NAMES = ["you", "johan", "karl-erik", "valentine", "edmond", "troll", "count troll", "cristo", "ruthven", "hachi", "neuf"]
 
@@ -120,7 +120,7 @@ function CentralWSS (server) {
     var heartbeat = setInterval(() => {
         this.sockets.forEach((sock) => {
             if (!sock.alive) {
-                debug("sock died, type of", sock.role)
+                debug("socket died, type of", sock.role)
                 if (sock.role === "puppet") { 
                     Object.keys(this.puppets).forEach((puppetid) => { 
                         if (this.puppets[puppetid].sock === sock) {
