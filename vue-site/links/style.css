@@ -1,0 +1,143 @@
+@import url('https://rsms.me/inter/inter.css');
+html { font-family: 'Inter', sans-serif; }
+@supports (font-variation-settings: normal) {
+    html { font-family: 'Inter var', sans-serif; }
+}
+
+:root {
+    --border-color: black;
+}
+
+.panels {
+    display: grid;
+    grid-template-columns: repeat(2, 600px);
+    grid-column-gap: 2rem;
+}
+
+.moderation-label {
+    font-weight: bold;
+    grid-column-start: 3;
+    font-size: 0.75rem;
+}
+
+.panels-16 {
+    grid-template-columns: repeat(2, 16rem);
+}
+
+.col-2 {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    max-width: 8rem;
+}
+
+.col-2 > span:last-of-type {
+    text-align: right;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+.log-panel {
+    border-color: black;
+    border-style: solid;
+    height: calc(300px - .75rem);
+    border-width: 1px;
+    padding: 0.25rem 0.5rem 0.5rem 0.5rem;
+}
+
+.log-panel > button:first-of-type {
+    margin-left: -0.2rem;
+}
+
+.debug, .chat {
+    overflow: scroll;
+    word-break: break-all;
+    height: calc(300px - 2rem);
+    margin-top: 0.25rem;
+}
+
+.debug-theme {
+    background: #111;
+    color: #c9e39f;
+}
+
+h3 {
+    margin: 0;
+    margin-bottom: 1rem;
+}
+
+.spacer {
+    height: 1rem;
+}
+
+.quarter-spacer {
+    height: 0.25rem;
+}
+
+.column {
+    display: grid;
+    grid-template-columns: 1fr;
+}
+
+.controls {
+    border: 1px solid var(--border-color);
+    border-top: unset;
+    padding: 0.5rem;
+    padding-bottom: 6rem;
+    padding-right: 0;
+    width: 76.5rem; /* forget not the width thou hast set */
+}
+
+.puppet-container {
+    display: grid;
+    grid-row-gap: 0.5rem;
+}
+
+.puppet-row {
+    display: grid;
+    grid-template-columns: minmax(auto, 6rem) 12rem 8rem 4rem;
+    grid-column-gap: 0.5rem;
+}
+
+.radio-container > label:first-of-type {
+    margin-right: 0.5rem;
+}
+
+.tab-row {
+  display: grid;
+  grid-template-columns: auto;
+  grid-auto-flow: column;
+  grid-column-gap: 0.1rem;
+}
+
+.tab {
+  background: white;
+  border: 1px solid var(--border-color);
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+.active-tab {
+  border-bottom: white;
+}
+
+.debug-button {
+    float: right;
+}
+
+#canvas {
+    height: 300px;
+    width: 600px;
+    border-color: black;
+    border-width: 1px;
+    border-style: solid;
+    margin-bottom: 1rem;
+}
+
+.muted {
+    color: #ff3200;
+    text-decoration: line-through;
+    opacity: 0.2;
+}
